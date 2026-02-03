@@ -19,6 +19,7 @@
       border-radius: 18px;
       padding: 14px;
       backdrop-filter: blur(6px);
+      position: relative;
     }
     .topbar{
       display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
@@ -88,7 +89,7 @@
       border-radius: 16px;
       padding: 12px;
     }
-    .history h3{ margin:0 0 8px; font-size:14px; letter-spacing:.02em; }
+    .history h3{ margin:0; font-size:14px; letter-spacing:.02em; }
     .hist-item{
       display:flex; justify-content:space-between; gap:10px;
       padding:8px 10px; border-radius:12px;
@@ -107,11 +108,27 @@
     }
     .smallbtn:active{ transform: scale(.98); }
     .footer{ margin-top:10px; text-align:center; font-size:12px; opacity:.85; }
+
+    /* mini toast */
+    .toast{
+      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.25);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+    }
+    .toast.show{ opacity: 1; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
+      <div class="toast" id="toast">Guardado ✅</div>
+
       <div class="topbar">
         <div>
           <div class="title" id="today_title">Hoy</div>
@@ -162,8 +179,8 @@
 
 <script>
   const metrics = ["S","Z","CC","C","X"];
-  const STATE_KEY = "kpi_state_v3";
-  const HIST_KEY  = "kpi_history_v3";
+  const STATE_KEY = "kpi_state_v4";
+  const HIST_KEY  = "kpi_history_v4";
   const MAX_HIST  = 14;
   const AGGR_MIN_STOPS = 50;
 
@@ -192,203 +209,4 @@
   const list = document.getElementById("list");
   const repEl = document.getElementById("rep");
   const storeEl = document.getElementById("store");
-  const todayDateEl = document.getElementById("today_date");
-  const todayTitleEl = document.getElementById("today_title");
-  const aggrEl = document.getElementById("aggr");
-  const closeEl = document.getElementById("close");
-  const histBox = document.getElementById("hist_list");
-
-  repEl.value = state.rep;
-  storeEl.value = state.store;
-
-  // ---------- Faster saving (debounce) ----------
-  let saveTimer = null;
-  function saveNow() {
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
-    localStorage.setItem(HIST_KEY, JSON.stringify(history));
-  }
-  function save() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveNow, 350); // clave para que no se ponga lenta con spam de taps
-  }
-
-  // ---------- Render ----------
-  function renderDate() {
-    todayTitleEl.textContent = "Hoy";
-    todayDateEl.textContent = state.date;
-  }
-
-  function renderMetrics() {
-    list.innerHTML = "";
-    metrics.forEach(k => {
-      const row = document.createElement("div");
-      row.className = "row";
-      row.innerHTML = `
-        <div class="label">${k}</div>
-        <div class="pill">
-          <button aria-label="menos ${k}" data-k="${k}" data-d="-1">−</button>
-          <div class="sep"></div>
-          <div class="val" id="v_${k}">${state.values[k]}</div>
-          <div class="sep"></div>
-          <button aria-label="más ${k}" data-k="${k}" data-d="1">+</button>
-        </div>
-      `;
-      list.appendChild(row);
-    });
-  }
-
-  function renderIndicators() {
-    const S = state.values.S;
-    const Z = state.values.Z;
-    const X = state.values.X;
-
-    // Agresividad: solo mostrar si S >= 50
-    if (S >= AGGR_MIN_STOPS) {
-      aggrEl.textContent = fmtPct(S > 0 ? (Z / S) : 0);
-    } else {
-      aggrEl.textContent = `— (min ${AGGR_MIN_STOPS} S)`;
-    }
-
-    // Cierre: X/Z
-    closeEl.textContent = fmtPct(Z > 0 ? (X / Z) : 0);
-  }
-
-  function histLine(h) {
-    return `${h.date} • ${h.rep || "Rep?"} • ${h.store || "Store?"} — S:${h.values.S} Z:${h.values.Z} CC:${h.values.CC} C:${h.values.C} X:${h.values.X}`;
-  }
-
-  function renderHistory() {
-    if (!history.length) {
-      histBox.textContent = "Sin registros guardados todavía.";
-      return;
-    }
-    histBox.innerHTML = "";
-    history.slice(0, MAX_HIST).forEach((h, idx) => {
-      const item = document.createElement("div");
-      item.className = "hist-item";
-      item.innerHTML = `
-        <div style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-          ${histLine(h)}
-        </div>
-        <button class="smallbtn" data-del="${idx}">X</button>
-      `;
-      histBox.appendChild(item);
-    });
-  }
-
-  function reportText() {
-    const S = state.values.S, Z = state.values.Z, CC = state.values.CC, C = state.values.C, X = state.values.X;
-
-    const aggr = (S > 0) ? (Z / S) : 0;
-    const close = (Z > 0) ? (X / Z) : 0;
-
-    const aggrLine = (S >= AGGR_MIN_STOPS)
-      ? `% Agresividad (Z/S): ${fmtPct(aggr)}`
-      : `% Agresividad (Z/S): — (min ${AGGR_MIN_STOPS} S)`;
-
-    return [
-      `Rep: ${state.rep || "-"}`,
-      `Store: ${state.store || "-"}`,
-      `Fecha: ${state.date}`,
-      `S: ${S} | Z: ${Z} | CC: ${CC} | C: ${C} | X: ${X}`,
-      aggrLine,
-      `% Cierre (X/Z): ${fmtPct(close)}`
-    ].join("\n");
-  }
-
-  // ---------- Events ----------
-  document.addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-k]");
-    if (!b) return;
-
-    const k = b.dataset.k;
-    const d = Number(b.dataset.d);
-
-    const prev = state.values[k];
-    const next = Math.max(0, prev + d);
-    if (next === prev) return;
-
-    state.values[k] = next;
-    document.getElementById("v_" + k).textContent = next;
-
-    renderIndicators();
-    save(); // debounced
-  });
-
-  repEl.addEventListener("input", () => { state.rep = repEl.value.trim(); save(); });
-  storeEl.addEventListener("input", () => { state.store = storeEl.value.trim(); save(); });
-
-  document.getElementById("share").addEventListener("click", async () => {
-    const text = reportText();
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "KPI Reporte", text });
-        return;
-      }
-    } catch (_) { /* cancelado o falló */ }
-
-    // fallback copy
-    try {
-      await navigator.clipboard.writeText(text);
-      alert("No se pudo abrir compartir. Reporte copiado ✅");
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-      alert("No se pudo abrir compartir. Reporte copiado ✅");
-    }
-  });
-
-  document.getElementById("newday").addEventListener("click", () => {
-    const shouldSave = confirm("¿Guardar el día antes de empezar uno nuevo?");
-    if (shouldSave) {
-      const key = `${state.date}||${state.rep}||${state.store}`;
-      history = history.filter(h => `${h.date}||${h.rep}||${h.store}` !== key);
-      history.unshift({
-        date: state.date,
-        rep: state.rep,
-        store: state.store,
-        values: { ...state.values }
-      });
-      history = history.slice(0, MAX_HIST);
-    }
-
-    state.date = isoDateLocal();
-    metrics.forEach(k => state.values[k] = 0);
-
-    renderDate();
-    renderMetrics();
-    renderIndicators();
-    renderHistory();
-
-    saveNow(); // inmediato al cerrar día
-  });
-
-  histBox.addEventListener("click", (e) => {
-    const del = e.target.closest("button[data-del]");
-    if (!del) return;
-    const idx = Number(del.dataset.del);
-    history.splice(idx, 1);
-    renderHistory();
-    saveNow(); // inmediato
-  });
-
-  document.getElementById("clearhist").addEventListener("click", () => {
-    if (!confirm("¿Seguro que quieres borrar el historial local?")) return;
-    history = [];
-    renderHistory();
-    saveNow(); // inmediato
-  });
-
-  // ---------- Init ----------
-  renderDate();
-  renderMetrics();
-  renderIndicators();
-  renderHistory();
-  save(); // initial (debounced)
-</script>
-</body>
-</html>
+  const todayDateE
