@@ -24,9 +24,7 @@
       display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
       margin-bottom:12px;
     }
-    .title{
-      font-weight:800; letter-spacing:.02em; font-size:18px; line-height:1.1;
-    }
+    .title{ font-weight:800; letter-spacing:.02em; font-size:18px; line-height:1.1; }
     .subtitle{ opacity:.9; font-size:13px; margin-top:4px; }
     .btn{
       border:1px solid rgba(255,255,255,.40);
@@ -52,7 +50,6 @@
     .field input::placeholder{ color: rgba(255,255,255,.75); }
 
     .metrics{ margin-top:10px; }
-
     .row{ text-align:center; margin:16px 0; }
     .label{ font-weight:800; letter-spacing:.08em; margin-bottom:8px; font-size:20px; }
     .pill{
@@ -91,9 +88,7 @@
       border-radius: 16px;
       padding: 12px;
     }
-    .history h3{
-      margin:0 0 8px; font-size:14px; letter-spacing:.02em;
-    }
+    .history h3{ margin:0 0 8px; font-size:14px; letter-spacing:.02em; }
     .hist-item{
       display:flex; justify-content:space-between; gap:10px;
       padding:8px 10px; border-radius:12px;
@@ -124,8 +119,7 @@
         </div>
 
         <div class="btnrow">
-          <button class="btn" id="copy">Copiar reporte</button>
-          <button class="btn" id="undo">Undo</button>
+          <button class="btn" id="share">Compartir</button>
           <button class="btn" id="newday">Nuevo día</button>
         </div>
       </div>
@@ -146,10 +140,10 @@
       <div class="indicators">
         <div class="ind">
           <div class="k">% Agresividad (Z/S)</div>
-          <div class="v" id="aggr">0.0%</div>
+          <div class="v" id="aggr">—</div>
         </div>
         <div class="ind">
-          <div class="k">% Cierre (C/CC)</div>
+          <div class="k">% Cierre (X/Z)</div>
           <div class="v" id="close">0.0%</div>
         </div>
       </div>
@@ -171,12 +165,11 @@
   const STATE_KEY = "kpi_state_v2";
   const HIST_KEY  = "kpi_history_v2";
   const MAX_HIST  = 14;
+  const AGGR_MIN_STOPS = 50;
 
-  // Helpers
   const fmtPct = (n) => (Number.isFinite(n) ? (n * 100).toFixed(1) + "%" : "0.0%");
   const isoDateLocal = () => {
     const d = new Date();
-    // Fecha local (sin timezone raros): YYYY-MM-DD usando zona del dispositivo
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth()+1).padStart(2,"0");
     const dd = String(d.getDate()).padStart(2,"0");
@@ -189,8 +182,7 @@
     date: saved.date || isoDateLocal(),
     rep: saved.rep || "",
     store: saved.store || "",
-    values: saved.values || {},
-    undo: saved.undo || [] // stack de acciones
+    values: saved.values || {}
   };
   metrics.forEach(k => { if (typeof state.values[k] !== "number") state.values[k] = 0; });
 
@@ -238,13 +230,18 @@
   function renderIndicators() {
     const S = state.values.S;
     const Z = state.values.Z;
-    const CC = state.values.CC;
-    const C = state.values.C;
+    const X = state.values.X;
 
-    const aggr = (S > 0) ? (Z / S) : 0;
-    const close = (CC > 0) ? (C / CC) : 0;
+    // % Agresividad: solo mostrar cuando S >= 50
+    if (S >= AGGR_MIN_STOPS) {
+      const aggr = (S > 0) ? (Z / S) : 0;
+      document.getElementById("aggr").textContent = fmtPct(aggr);
+    } else {
+      document.getElementById("aggr").textContent = `— (min ${AGGR_MIN_STOPS} S)`;
+    }
 
-    document.getElementById("aggr").textContent = fmtPct(aggr);
+    // % Cierre: X/Z
+    const close = (Z > 0) ? (X / Z) : 0;
     document.getElementById("close").textContent = fmtPct(close);
   }
 
@@ -272,27 +269,27 @@
     });
   }
 
-  function fullReportText() {
+  function reportText() {
     const S = state.values.S, Z = state.values.Z, CC = state.values.CC, C = state.values.C, X = state.values.X;
+
     const aggr = (S > 0) ? (Z / S) : 0;
-    const close = (CC > 0) ? (C / CC) : 0;
+    const close = (Z > 0) ? (X / Z) : 0;
+
+    const aggrLine = (S >= AGGR_MIN_STOPS)
+      ? `% Agresividad (Z/S): ${fmtPct(aggr)}`
+      : `% Agresividad (Z/S): — (min ${AGGR_MIN_STOPS} S)`;
 
     return [
       `Rep: ${state.rep || "-"}`,
       `Store: ${state.store || "-"}`,
       `Fecha: ${state.date}`,
       `S: ${S} | Z: ${Z} | CC: ${CC} | C: ${C} | X: ${X}`,
-      `% Agresividad (Z/S): ${fmtPct(aggr)}`,
-      `% Cierre (C/CC): ${fmtPct(close)}`
+      aggrLine,
+      `% Cierre (X/Z): ${fmtPct(close)}`
     ].join("\n");
   }
 
-  function pushUndo(k, prev) {
-    state.undo.push({ k, prev });
-    if (state.undo.length > 30) state.undo.shift();
-  }
-
-  // Events
+  // Click +/-
   document.addEventListener("click", (e) => {
     const b = e.target.closest("button[data-k]");
     if (!b) return;
@@ -302,43 +299,35 @@
 
     const prev = state.values[k];
     const next = Math.max(0, prev + d);
-
     if (next === prev) return;
 
-    pushUndo(k, prev);
     state.values[k] = next;
-
     document.getElementById("v_" + k).textContent = next;
+
     renderIndicators();
     save();
   });
 
-  repEl.addEventListener("input", () => {
-    state.rep = repEl.value.trim();
-    save();
-  });
-  storeEl.addEventListener("input", () => {
-    state.store = storeEl.value.trim();
-    save();
-  });
+  repEl.addEventListener("input", () => { state.rep = repEl.value.trim(); save(); });
+  storeEl.addEventListener("input", () => { state.store = storeEl.value.trim(); save(); });
 
-  document.getElementById("undo").addEventListener("click", () => {
-    const last = state.undo.pop();
-    if (!last) return;
-    state.values[last.k] = last.prev;
-    document.getElementById("v_" + last.k).textContent = last.prev;
-    renderIndicators();
-    save();
-  });
-
-  document.getElementById("copy").addEventListener("click", async () => {
+  // Compartir: abre Share Sheet (WhatsApp, Messages, etc). Fallback: copiar.
+  document.getElementById("share").addEventListener("click", async () => {
+    const text = reportText();
     try {
-      await navigator.clipboard.writeText(fullReportText());
-      alert("Reporte copiado ✅");
+      if (navigator.share) {
+        await navigator.share({ title: "KPI Reporte", text });
+        return;
+      }
+    } catch (_) { /* si cancelan share, no pasa nada */ }
+
+    // fallback copy
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("No se pudo abrir compartir. Reporte copiado ✅");
     } catch {
-      // fallback
       const ta = document.createElement("textarea");
-      ta.value = fullReportText();
+      ta.value = text;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
@@ -350,24 +339,19 @@
   document.getElementById("newday").addEventListener("click", () => {
     const shouldSave = confirm("¿Guardar el día antes de empezar uno nuevo?");
     if (shouldSave) {
-      // Upsert simple: si ya existe ese día+rep+store, lo reemplaza
       const key = `${state.date}||${state.rep}||${state.store}`;
       history = history.filter(h => `${h.date}||${h.rep}||${h.store}` !== key);
-
       history.unshift({
         date: state.date,
         rep: state.rep,
         store: state.store,
         values: { ...state.values }
       });
-
       history = history.slice(0, MAX_HIST);
     }
 
-    // Reset día
     state.date = isoDateLocal();
     metrics.forEach(k => state.values[k] = 0);
-    state.undo = [];
 
     renderDate();
     renderMetrics();
