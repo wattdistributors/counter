@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contador KPIs</title>
+  <style>
+    :root { --bg1:#1b86c8; --bg2:#0b5a86; }
+    body{
+      margin:0; min-height:100vh; display:flex; justify-content:center; align-items:center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      color:#fff;
+    }
+    .wrap{ width:min(420px, 92vw); padding:28px 16px; }
+    .row{ text-align:center; margin:22px 0; }
+    .label{ font-weight:700; letter-spacing:.06em; margin-bottom:10px; font-size:22px; }
+    .pill{
+      margin:0 auto;
+      width:280px; height:56px;
+      background:#fff; border-radius:999px;
+      display:flex; overflow:hidden;
+      box-shadow: 0 12px 30px rgba(0,0,0,.18);
+      color:#111;
+    }
+    .btn, .val{
+      flex:1; display:flex; align-items:center; justify-content:center;
+      border:0; background:transparent; font-size:26px; cursor:pointer;
+    }
+    .val{ flex:1.2; font-weight:700; font-size:24px; }
+    .sep{ width:2px; background:#111; opacity:.8; }
+    .btn:active{ transform: scale(.97); }
+    .footer{
+      margin-top:22px; opacity:.85; text-align:center; font-size:13px;
+    }
+    .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .ghost{
+      border:1px solid rgba(255,255,255,.45);
+      background:rgba(255,255,255,.12);
+      color:#fff; padding:10px 12px; border-radius:12px; cursor:pointer;
+      font-size:14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div style="font-weight:700">Hoy</div>
+      <button class="ghost" id="reset">Reset</button>
+    </div>
+
+    <div id="list"></div>
+
+    <div class="footer">Se guarda en este dispositivo.</div>
+  </div>
+
+  <script>
+    const metrics = ["S","Z","CC","C","X"];
+
+    // Carga valores guardados o crea default
+    const state = JSON.parse(localStorage.getItem("kpi_state") || "{}");
+    metrics.forEach(k => { if (typeof state[k] !== "number") state[k] = 0; });
+
+    const list = document.getElementById("list");
+
+    function save(){ localStorage.setItem("kpi_state", JSON.stringify(state)); }
+
+    function render(){
+      list.innerHTML = "";
+      metrics.forEach(k => {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = `
+          <div class="label">${k}</div>
+          <div class="pill">
+            <button class="btn" aria-label="menos ${k}" data-k="${k}" data-d="-1">−</button>
+            <div class="sep"></div>
+            <div class="val" id="v_${k}">${state[k]}</div>
+            <div class="sep"></div>
+            <button class="btn" aria-label="más ${k}" data-k="${k}" data-d="1">+</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-k]");
+      if(!b) return;
+      const k = b.dataset.k;
+      const d = Number(b.dataset.d);
+      state[k] = Math.max(0, state[k] + d);
+      document.getElementById("v_" + k).textContent = state[k];
+      save();
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      metrics.forEach(k => state[k] = 0);
+      save(); render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
