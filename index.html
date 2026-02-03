@@ -162,8 +162,8 @@
 
 <script>
   const metrics = ["S","Z","CC","C","X"];
-  const STATE_KEY = "kpi_state_v2";
-  const HIST_KEY  = "kpi_history_v2";
+  const STATE_KEY = "kpi_state_v3";
+  const HIST_KEY  = "kpi_history_v3";
   const MAX_HIST  = 14;
   const AGGR_MIN_STOPS = 50;
 
@@ -176,7 +176,7 @@
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // Load state
+  // ---------- Load ----------
   const saved = JSON.parse(localStorage.getItem(STATE_KEY) || "{}");
   const state = {
     date: saved.date || isoDateLocal(),
@@ -186,23 +186,33 @@
   };
   metrics.forEach(k => { if (typeof state.values[k] !== "number") state.values[k] = 0; });
 
-  // Load history
   let history = JSON.parse(localStorage.getItem(HIST_KEY) || "[]");
 
+  // ---------- DOM ----------
   const list = document.getElementById("list");
   const repEl = document.getElementById("rep");
   const storeEl = document.getElementById("store");
   const todayDateEl = document.getElementById("today_date");
   const todayTitleEl = document.getElementById("today_title");
+  const aggrEl = document.getElementById("aggr");
+  const closeEl = document.getElementById("close");
+  const histBox = document.getElementById("hist_list");
 
   repEl.value = state.rep;
   storeEl.value = state.store;
 
-  function save() {
+  // ---------- Faster saving (debounce) ----------
+  let saveTimer = null;
+  function saveNow() {
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
     localStorage.setItem(HIST_KEY, JSON.stringify(history));
   }
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNow, 350); // clave para que no se ponga lenta con spam de taps
+  }
 
+  // ---------- Render ----------
   function renderDate() {
     todayTitleEl.textContent = "Hoy";
     todayDateEl.textContent = state.date;
@@ -232,17 +242,15 @@
     const Z = state.values.Z;
     const X = state.values.X;
 
-    // % Agresividad: solo mostrar cuando S >= 50
+    // Agresividad: solo mostrar si S >= 50
     if (S >= AGGR_MIN_STOPS) {
-      const aggr = (S > 0) ? (Z / S) : 0;
-      document.getElementById("aggr").textContent = fmtPct(aggr);
+      aggrEl.textContent = fmtPct(S > 0 ? (Z / S) : 0);
     } else {
-      document.getElementById("aggr").textContent = `— (min ${AGGR_MIN_STOPS} S)`;
+      aggrEl.textContent = `— (min ${AGGR_MIN_STOPS} S)`;
     }
 
-    // % Cierre: X/Z
-    const close = (Z > 0) ? (X / Z) : 0;
-    document.getElementById("close").textContent = fmtPct(close);
+    // Cierre: X/Z
+    closeEl.textContent = fmtPct(Z > 0 ? (X / Z) : 0);
   }
 
   function histLine(h) {
@@ -250,12 +258,11 @@
   }
 
   function renderHistory() {
-    const box = document.getElementById("hist_list");
     if (!history.length) {
-      box.textContent = "Sin registros guardados todavía.";
+      histBox.textContent = "Sin registros guardados todavía.";
       return;
     }
-    box.innerHTML = "";
+    histBox.innerHTML = "";
     history.slice(0, MAX_HIST).forEach((h, idx) => {
       const item = document.createElement("div");
       item.className = "hist-item";
@@ -265,7 +272,7 @@
         </div>
         <button class="smallbtn" data-del="${idx}">X</button>
       `;
-      box.appendChild(item);
+      histBox.appendChild(item);
     });
   }
 
@@ -289,7 +296,7 @@
     ].join("\n");
   }
 
-  // Click +/-
+  // ---------- Events ----------
   document.addEventListener("click", (e) => {
     const b = e.target.closest("button[data-k]");
     if (!b) return;
@@ -305,13 +312,12 @@
     document.getElementById("v_" + k).textContent = next;
 
     renderIndicators();
-    save();
+    save(); // debounced
   });
 
   repEl.addEventListener("input", () => { state.rep = repEl.value.trim(); save(); });
   storeEl.addEventListener("input", () => { state.store = storeEl.value.trim(); save(); });
 
-  // Compartir: abre Share Sheet (WhatsApp, Messages, etc). Fallback: copiar.
   document.getElementById("share").addEventListener("click", async () => {
     const text = reportText();
     try {
@@ -319,7 +325,7 @@
         await navigator.share({ title: "KPI Reporte", text });
         return;
       }
-    } catch (_) { /* si cancelan share, no pasa nada */ }
+    } catch (_) { /* cancelado o falló */ }
 
     // fallback copy
     try {
@@ -332,7 +338,7 @@
       ta.select();
       document.execCommand("copy");
       ta.remove();
-      alert("Reporte copiado ✅");
+      alert("No se pudo abrir compartir. Reporte copiado ✅");
     }
   });
 
@@ -357,31 +363,32 @@
     renderMetrics();
     renderIndicators();
     renderHistory();
-    save();
+
+    saveNow(); // inmediato al cerrar día
   });
 
-  document.getElementById("hist_list").addEventListener("click", (e) => {
+  histBox.addEventListener("click", (e) => {
     const del = e.target.closest("button[data-del]");
     if (!del) return;
     const idx = Number(del.dataset.del);
     history.splice(idx, 1);
     renderHistory();
-    save();
+    saveNow(); // inmediato
   });
 
   document.getElementById("clearhist").addEventListener("click", () => {
     if (!confirm("¿Seguro que quieres borrar el historial local?")) return;
     history = [];
     renderHistory();
-    save();
+    saveNow(); // inmediato
   });
 
-  // Init
+  // ---------- Init ----------
   renderDate();
   renderMetrics();
   renderIndicators();
   renderHistory();
-  save();
+  save(); // initial (debounced)
 </script>
 </body>
 </html>
