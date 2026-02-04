@@ -28,6 +28,7 @@
     }
     .title{ font-weight:800; letter-spacing:.02em; font-size:18px; line-height:1.1; }
     .subtitle{ opacity:.9; font-size:13px; margin-top:4px; }
+
     .btn{
       border:1px solid rgba(255,255,255,.40);
       background:rgba(255,255,255,.12);
@@ -38,6 +39,7 @@
     }
     .btn:active{ transform: scale(.98); }
     .btnrow{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
     .inputs{
       display:grid; grid-template-columns: 1fr 1fr; gap:10px;
       margin: 10px 0 8px;
@@ -127,17 +129,18 @@
 
         <div class="btnrow">
           <button class="btn" id="share">Compartir</button>
+          <button class="btn" id="reset">Reset</button>
         </div>
       </div>
 
       <div class="inputs">
         <div class="field">
           <label>Rep</label>
-          <input id="rep" placeholder="Nombre del rep" />
+          <input id="rep" placeholder="Name" />
         </div>
         <div class="field">
           <label>Store</label>
-          <input id="store" placeholder="Ej: El Rancho" />
+          <input id="store" placeholder="Address" />
         </div>
       </div>
 
@@ -171,7 +174,7 @@
   const STATE_KEY = "kpi_state_v3";
   const HIST_KEY  = "kpi_history_v3";
   const MAX_HIST  = 14;
-  const AGGR_MIN_STOPS = 50;
+  const AGGR_MIN_STOPS = 20; // <- CAMBIO: desde 20
 
   const fmtPct = (n) => (Number.isFinite(n) ? (n * 100).toFixed(1) + "%" : "0.0%");
   const isoDateLocal = () => {
@@ -182,7 +185,7 @@
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  // Extra hard-stop for iOS double-tap zoom
+  // Prevent double-tap zoom (extra guard for iOS Safari)
   document.addEventListener("dblclick", (e) => e.preventDefault(), { passive:false });
 
   // ---------- Load ----------
@@ -258,12 +261,14 @@
     const Z = state.values.Z;
     const X = state.values.X;
 
+    // Agresividad: desde 20 stops
     if (S >= AGGR_MIN_STOPS) {
       aggrEl.textContent = fmtPct(S > 0 ? (Z / S) : 0);
     } else {
       aggrEl.textContent = `— (min ${AGGR_MIN_STOPS} S)`;
     }
 
+    // Cierre: X/Z
     closeEl.textContent = fmtPct(Z > 0 ? (X / Z) : 0);
   }
 
@@ -290,12 +295,13 @@
     });
   }
 
+  // Reporte “humano” (como antes). Si quieres TSV para Sheets, lo cambiamos.
   function reportText() {
     const S = state.values.S, Z = state.values.Z, CC = state.values.CC, C = state.values.C, X = state.values.X;
-    const aggr = (S > 0) ? (Z / S) : 0;
+    const aggr = (S >= AGGR_MIN_STOPS && S > 0) ? (Z / S) : null;
     const close = (Z > 0) ? (X / Z) : 0;
 
-    const aggrLine = (S >= AGGR_MIN_STOPS)
+    const aggrLine = (aggr !== null)
       ? `% Agresividad (Z/S): ${fmtPct(aggr)}`
       : `% Agresividad (Z/S): — (min ${AGGR_MIN_STOPS} S)`;
 
@@ -309,28 +315,10 @@
     ].join("\n");
   }
 
-  function closeDayToHistory() {
-    const key = `${state.date}||${state.rep}||${state.store}`;
-    history = history.filter(h => `${h.date}||${h.rep}||${h.store}` !== key);
-    history.unshift({
-      date: state.date,
-      rep: state.rep,
-      store: state.store,
-      values: { ...state.values }
-    });
-    history = history.slice(0, MAX_HIST);
-    saveHistoryNow();
-  }
-
-  function startNewDay() {
-    state.date = isoDateLocal();
+  function resetCounters() {
     metrics.forEach(k => state.values[k] = 0);
-
-    renderDate();
     renderMetrics();
     renderIndicators();
-    renderHistory();
-
     saveStateNow();
   }
 
@@ -353,14 +341,14 @@
     saveState();
   });
 
-  // inputs: smooth in mobile, trim on blur
+  // inputs smooth: trim on blur
   repEl.addEventListener("input", () => { state.rep = repEl.value; saveState(); });
   repEl.addEventListener("blur",  () => { state.rep = repEl.value.trim(); repEl.value = state.rep; saveStateNow(); });
 
   storeEl.addEventListener("input", () => { state.store = storeEl.value; saveState(); });
   storeEl.addEventListener("blur",  () => { state.store = storeEl.value.trim(); storeEl.value = state.store; saveStateNow(); });
 
-  // SHARE = share/copy (silent) + auto new day
+  // Compartir SOLO comparte/copia (silencioso). NO resetea.
   document.getElementById("share").addEventListener("click", async () => {
     const text = reportText();
 
@@ -378,11 +366,10 @@
         ta.remove();
       }
     } catch (_) {
-      // silent fallback: try copy
+      // silent fallback
       try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(text);
-        } else {
+        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+        else {
           const ta = document.createElement("textarea");
           ta.value = text;
           document.body.appendChild(ta);
@@ -392,9 +379,12 @@
         }
       } catch {}
     }
+  });
 
-    closeDayToHistory();
-    startNewDay();
+  // Reset botón: reinicia contadores (con confirm)
+  document.getElementById("reset").addEventListener("click", () => {
+    if (!confirm("¿Seguro que quieres resetear los contadores?")) return;
+    resetCounters();
   });
 
   // delete hist item
