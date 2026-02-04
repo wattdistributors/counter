@@ -188,7 +188,7 @@
 
       <div class="history">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-          <h3>Historial (local)</h3>
+          <h3>Historial (últimos 7)</h3>
           <button class="smallbtn" id="clearhist">Borrar historial</button>
         </div>
         <div id="hist_list" class="muted"></div>
@@ -202,7 +202,7 @@
   const metrics = ["S","Z","CC","C","X"];
   const STATE_KEY = "kpi_state_v3";
   const HIST_KEY  = "kpi_history_v3";
-  const MAX_HIST  = 14;
+  const MAX_HIST  = 7;            // <- últimos 7
   const AGGR_MIN_STOPS = 20;
 
   const fmtPct = (n) => (Number.isFinite(n) ? (n * 100).toFixed(1) + "%" : "0.0%");
@@ -257,6 +257,44 @@
       else saveStateNow();
     }, 250);
   }
+
+  // ---------- History helpers ----------
+  function dayKey(obj) {
+    return `${obj.date}||${obj.rep}||${obj.store}`;
+  }
+
+  function archiveTodayToHistory() {
+    // No guardamos si está todo en cero (para no ensuciar)
+    const any = metrics.some(k => (state.values[k] || 0) > 0);
+    if (!any) return;
+
+    const snapshot = {
+      date: state.date,
+      rep: state.rep,
+      store: state.store,
+      values: { ...state.values }
+    };
+
+    const key = dayKey(snapshot);
+    history = history.filter(h => dayKey(h) !== key);
+    history.unshift(snapshot);
+    history = history.slice(0, MAX_HIST);
+
+    saveHistoryNow();
+  }
+
+  // Auto-archive si cambió el día
+  (function autoRolloverIfNewDay() {
+    const today = isoDateLocal();
+    if (state.date !== today) {
+      // guarda el día anterior al abrir (si tenía datos)
+      archiveTodayToHistory();
+      // arranca nuevo día
+      state.date = today;
+      metrics.forEach(k => state.values[k] = 0);
+      saveStateNow();
+    }
+  })();
 
   // ---------- Render ----------
   const valEls = {};
@@ -322,7 +360,6 @@
     });
   }
 
-  // Reporte para compartir (NO resetea)
   function reportText() {
     const S = state.values.S, Z = state.values.Z, CC = state.values.CC, C = state.values.C, X = state.values.X;
 
@@ -376,8 +413,12 @@
   storeEl.addEventListener("input", () => { state.store = storeEl.value; saveState(); });
   storeEl.addEventListener("blur",  () => { state.store = storeEl.value.trim(); storeEl.value = state.store; saveStateNow(); });
 
-  // share only (silent), no reset
+  // Compartir: SOLO comparte, pero AHORA sí guarda snapshot en historial (sin reset)
   document.getElementById("share").addEventListener("click", async () => {
+    // guardar en historial antes de compartir (para que quede registro)
+    archiveTodayToHistory();
+    renderHistory();
+
     const text = reportText();
 
     try {
@@ -409,9 +450,11 @@
     }
   });
 
-  // reset button (manual)
+  // Reset: antes de resetear, guarda snapshot en historial
   document.getElementById("reset").addEventListener("click", () => {
     if (!confirm("¿Seguro que quieres resetear los contadores?")) return;
+    archiveTodayToHistory();
+    renderHistory();
     resetCounters();
   });
 
