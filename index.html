@@ -62,20 +62,24 @@
 
     .sessionInfo{
       width:100%;
+      box-sizing: border-box;          /* ✅ anti overflow iOS */
       display:flex;
       justify-content:space-between;
-      gap:10px;
+      gap:12px;
       align-items:center;
       margin: 8px 0 4px;
       padding: 10px 12px;
       border-radius: 14px;
       background: rgba(255,255,255,.10);
       border: 1px solid rgba(255,255,255,.18);
+      overflow:hidden;                 /* ✅ extra guard */
     }
 
     .sessionInfo .left{
+      flex: 1 1 auto;
       min-width:0;
     }
+
     .sessionInfo .left .line1{
       font-weight:900; letter-spacing:.02em;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -86,8 +90,8 @@
     }
 
     .timerBox{
-      text-align:right;
-      min-width:120px;
+      flex: 0 0 120px;                 /* ✅ no se sale */
+      text-align:center;               /* ✅ centrado */
     }
     .timerBox .t1{ font-size:12px; opacity:.9; }
     .timerBox .t2{ font-size:18px; font-weight:900; letter-spacing:.02em; margin-top:3px; }
@@ -228,7 +232,7 @@
     @media (max-width: 420px){
       .pill{ width: 290px; }
       .grid2{ grid-template-columns: 1fr; }
-      .timerBox{ min-width: 110px; }
+      .timerBox{ flex-basis: 112px; }
     }
   </style>
 </head>
@@ -245,15 +249,16 @@
         <div class="btnrow" id="top_actions"></div>
       </div>
 
-      <!-- Pantalla inicial -->
+      <!-- Start screen -->
       <div id="start_screen" class="center">
         <div style="opacity:.9; font-size:13px; max-width: 360px;">
-          Presiona <b>Iniciar día</b> para ingresar tu nombre y tienda. Luego comienza el conteo y el cronómetro.
+          Presiona <b>Iniciar día</b> para ingresar tu nombre y tienda.<br/>
+          Tap <b>Start day</b> to enter your name and store.
         </div>
-        <button class="btn primary" id="start_day">Iniciar día</button>
+        <button class="btn primary" id="start_day">Iniciar día / Start day</button>
       </div>
 
-      <!-- Pantalla de sesión activa -->
+      <!-- Active session screen -->
       <div id="session_screen" style="display:none;">
         <div class="sessionInfo">
           <div class="left">
@@ -261,7 +266,7 @@
             <div class="line2" id="date_line">—</div>
           </div>
           <div class="timerBox">
-            <div class="t1">Sesión</div>
+            <div class="t1">Session</div>
             <div class="t2" id="timer">00:00:00</div>
           </div>
         </div>
@@ -280,7 +285,7 @@
         </div>
 
         <div class="btnrow" style="margin-top:12px; justify-content:center;">
-          <button class="btn primary" id="finish_day">Finalizar día</button>
+          <button class="btn primary" id="finish_day">Finalizar día / End day</button>
         </div>
       </div>
 
@@ -288,50 +293,52 @@
     </div>
   </div>
 
-  <!-- Modal: Iniciar día -->
+  <!-- Modal: Start day -->
   <div class="overlay" id="modal_start">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Iniciar día">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Start day">
       <div class="modalHeader">
-        <div class="modalTitle">Iniciar día</div>
-        <button class="xbtn" id="start_x" aria-label="Cerrar">×</button>
+        <div class="modalTitle">Iniciar día / Start day</div>
+        <button class="xbtn" id="start_x" aria-label="Close">×</button>
       </div>
       <div class="modalBody">
         <div style="opacity:.9; font-size:13px;">
-          Ingresa tus datos para iniciar la sesión de hoy.
+          Ingresa tus datos para iniciar.<br/>
+          Enter your info to start.
         </div>
         <div class="grid2">
           <div class="field">
-            <label>Nombre</label>
-            <input id="start_name" placeholder="Ej: Alen" autocomplete="name" />
+            <label>Nombre / Name</label>
+            <input id="start_name" placeholder="Ej: Bob" autocomplete="name" />
           </div>
           <div class="field">
-            <label>Tienda</label>
-            <input id="start_store" placeholder="Ej: El Rancho — Irving" />
+            <label>Tienda / Store</label>
+            <input id="start_store" placeholder="Ej: 2770 Valwood Pkwy" />
           </div>
         </div>
         <div class="modalActions">
-          <button class="btn" id="start_cancel">Cancelar</button>
-          <button class="btn primary" id="start_confirm">Comenzar</button>
+          <button class="btn" id="start_cancel">Cancelar / Cancel</button>
+          <button class="btn primary" id="start_confirm">Comenzar / Start</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Finalizar día / Reporte -->
+  <!-- Modal: Day summary -->
   <div class="overlay" id="modal_report">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Finalizar día">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Day summary">
       <div class="modalHeader">
-        <div class="modalTitle">Resumen del día</div>
-        <button class="xbtn" id="report_x" aria-label="Volver">×</button>
+        <div class="modalTitle">Resumen del día / Day summary</div>
+        <button class="xbtn" id="report_x" aria-label="Back">×</button>
       </div>
       <div class="modalBody">
         <div class="reportBox" id="report_box">—</div>
         <div class="modalActions">
-          <button class="btn" id="copy_btn">Copiar</button>
-          <button class="btn primary" id="share_btn">Compartir</button>
+          <button class="btn" id="copy_btn">Copiar / Copy</button>
+          <button class="btn primary" id="share_btn">Compartir / Share</button>
         </div>
         <div style="margin-top:10px; opacity:.8; font-size:12px;">
-          Si copias o compartes, el día quedará finalizado y el contador se reseteará.
+          Copiar o compartir finaliza el día y resetea.<br/>
+          Copy or share ends the day and resets.
         </div>
       </div>
     </div>
@@ -481,12 +488,8 @@
       if (!state.active || !state.sessionStart) return;
       timerEl.textContent = fmtDuration(Date.now() - state.sessionStart);
     }, 1000);
-    // paint immediately
-    if (state.active && state.sessionStart) {
-      timerEl.textContent = fmtDuration(Date.now() - state.sessionStart);
-    } else {
-      timerEl.textContent = "00:00:00";
-    }
+    if (state.active && state.sessionStart) timerEl.textContent = fmtDuration(Date.now() - state.sessionStart);
+    else timerEl.textContent = "00:00:00";
   }
   function stopTimerLoop() {
     if (timerInterval) clearInterval(timerInterval);
@@ -494,12 +497,9 @@
   }
 
   // ---------- Modals helpers ----------
-  function openModal(el) {
-    el.classList.add("show");
-  }
-  function closeModal(el) {
-    el.classList.remove("show");
-  }
+  function openModal(el) { el.classList.add("show"); }
+  function closeModal(el) { el.classList.remove("show"); }
+
   function clickOutsideToClose(overlayEl, allow) {
     overlayEl.addEventListener("click", (e) => {
       if (!allow) return;
@@ -507,7 +507,7 @@
     });
   }
   clickOutsideToClose(modalStart, true);
-  clickOutsideToClose(modalReport, false); // reporte NO se cierra tocando fuera (para evitar errores)
+  clickOutsideToClose(modalReport, false); // don't close report by tapping outside
 
   // ---------- Session logic ----------
   function startDay(rep, store) {
@@ -532,8 +532,8 @@
     const duration = fmtDuration(endTs - startTs);
 
     const aggrLine = (aggr !== null)
-      ? `% Agresividad (Z/S): ${fmtPct(aggr)}`
-      : `% Agresividad (Z/S): — (min ${AGGR_MIN_STOPS} S)`;
+      ? `% Aggressiveness (Z/S): ${fmtPct(aggr)}`
+      : `% Aggressiveness (Z/S): — (min ${AGGR_MIN_STOPS} S)`;
 
     return [
       `Name: ${state.rep || "-"}`,
@@ -551,7 +551,6 @@
   }
 
   function finalizeAndReset() {
-    // reset total
     state.active = false;
     state.rep = "";
     state.store = "";
@@ -616,7 +615,7 @@
     const rep = (startName.value || "").trim();
     const store = (startStore.value || "").trim();
     if (!rep || !store) {
-      alert("Por favor ingresa Nombre y Tienda.");
+      alert("Por favor ingresa Nombre y Tienda.\nPlease enter Name and Store.");
       return;
     }
     closeModal(modalStart);
@@ -625,16 +624,19 @@
 
   document.getElementById("finish_day").addEventListener("click", () => {
     const endTs = Date.now();
-    const text = buildReport(endTs);
-    reportBox.textContent = text;
+    reportBox.textContent = buildReport(endTs);
     openModal(modalReport);
   });
 
-  // cerrar reporte (volver atrás)
   document.getElementById("report_x").addEventListener("click", () => closeModal(modalReport));
 
   async function doCopyOrShare(kind) {
-    const confirmMsg = `¿Seguro que quieres ${kind === "copy" ? "COPIAR" : "COMPARTIR"}?\n\nEsto dará por finalizado el día y reseteará el contador.`;
+    const confirmMsg =
+      `¿Seguro que quieres ${kind === "copy" ? "COPIAR" : "COMPARTIR"}?\n` +
+      `Esto finaliza el día y resetea.\n\n` +
+      `Are you sure you want to ${kind === "copy" ? "COPY" : "SHARE"}?\n` +
+      `This ends the day and resets.`;
+
     if (!confirm(confirmMsg)) return;
 
     const endTs = Date.now();
@@ -646,7 +648,7 @@
           await navigator.share({ title: "KPI Report", text });
         } else if (navigator.clipboard?.writeText) {
           await navigator.clipboard.writeText(text);
-          alert("No hay Share nativo aquí. Se copió al portapapeles.");
+          alert("No hay Share nativo aquí. Se copió al portapapeles.\nNo native Share here. Copied to clipboard.");
         } else {
           const ta = document.createElement("textarea");
           ta.value = text;
@@ -654,7 +656,7 @@
           ta.select();
           document.execCommand("copy");
           ta.remove();
-          alert("No hay Share nativo aquí. Se copió al portapapeles.");
+          alert("No hay Share nativo aquí. Se copió al portapapeles.\nNo native Share here. Copied to clipboard.");
         }
       } else {
         if (navigator.clipboard?.writeText) {
@@ -669,11 +671,9 @@
         }
       }
 
-      // Si llegó aquí: finaliza y resetea
       finalizeAndReset();
-    } catch (e) {
-      // Si falla, NO finalizamos el día automáticamente
-      alert("No se pudo completar la acción. No se finalizó el día.");
+    } catch (_) {
+      alert("No se pudo completar la acción. No se finalizó el día.\nAction failed. Day was not ended.");
     }
   }
 
@@ -682,8 +682,6 @@
 
   // ---------- Init ----------
   (function init() {
-    // si cambió el día mientras estaba guardado, no forzamos rollover:
-    // tu flujo ahora es por sesión; si está activo y es otro día, mantenemos igual (tú decides cerrar)
     renderHeader();
 
     if (state.active && state.sessionStart && state.rep && state.store) {
