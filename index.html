@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>KPIs Counter</title>
 
-  <!-- QR library (client-side) -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-
   <style>
     :root { --bg1:#1b86c8; --bg2:#0b5a86; }
     html, body { touch-action: manipulation; }
@@ -63,10 +60,9 @@
       text-align:center;
     }
 
-    /* ✅ FIX: no overflow on iOS (box-sizing + overflow hidden) */
     .sessionInfo{
       width:100%;
-      box-sizing: border-box;          /* key */
+      box-sizing: border-box;          /* ✅ anti overflow iOS */
       display:flex;
       justify-content:space-between;
       gap:12px;
@@ -76,7 +72,7 @@
       border-radius: 14px;
       background: rgba(255,255,255,.10);
       border: 1px solid rgba(255,255,255,.18);
-      overflow:hidden;
+      overflow:hidden;                 /* ✅ extra guard */
     }
 
     .sessionInfo .left{
@@ -93,10 +89,9 @@
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
 
-    /* ✅ FIX: keep timer centered and not pushing out */
     .timerBox{
-      flex: 0 0 120px;
-      text-align:center;
+      flex: 0 0 120px;                 /* ✅ no se sale */
+      text-align:center;               /* ✅ centrado */
     }
     .timerBox .t1{ font-size:12px; opacity:.9; }
     .timerBox .t2{ font-size:18px; font-weight:900; letter-spacing:.02em; margin-top:3px; }
@@ -234,11 +229,6 @@
       word-break: break-word;
     }
 
-    /* QR */
-    #qr_box{ background:#fff; padding:12px; border-radius:16px; }
-    #qr_box img, #qr_box canvas{ display:block; }
-    .qrHint{ margin-top:10px; opacity:.85; font-size:12px; text-align:center; }
-
     @media (max-width: 420px){
       .pill{ width: 290px; }
       .grid2{ grid-template-columns: 1fr; }
@@ -299,7 +289,7 @@
         </div>
       </div>
 
-      <div class="footer">KPIs Counter v4.1 — Designed by Alen Cordero</div>
+      <div class="footer">KPIs Counter v4.0 — Designed by Alen Cordero</div>
     </div>
   </div>
 
@@ -312,8 +302,8 @@
       </div>
       <div class="modalBody">
         <div style="opacity:.9; font-size:13px;">
-          Ingresa tus datos.<br/>
-          Enter your info.
+          Ingresa tus datos para iniciar.<br/>
+          Enter your info to start.
         </div>
         <div class="grid2">
           <div class="field">
@@ -333,7 +323,7 @@
     </div>
   </div>
 
-  <!-- Modal: Day summary (Report in EN) -->
+  <!-- Modal: Day summary -->
   <div class="overlay" id="modal_report">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Day summary">
       <div class="modalHeader">
@@ -344,38 +334,11 @@
         <div class="reportBox" id="report_box">—</div>
         <div class="modalActions">
           <button class="btn" id="copy_btn">Copiar / Copy</button>
-          <button class="btn primary" id="share_btn">QR / Share</button>
+          <button class="btn primary" id="share_btn">Compartir / Share</button>
         </div>
         <div style="margin-top:10px; opacity:.8; font-size:12px;">
-          Copy ends the day and resets.<br/>
-          QR: scan with phone, then tap Done.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: QR -->
-  <div class="overlay" id="modal_qr">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="QR">
-      <div class="modalHeader">
-        <div class="modalTitle">QR Report</div>
-        <button class="xbtn" id="qr_x" aria-label="Back">×</button>
-      </div>
-      <div class="modalBody" style="display:flex; flex-direction:column; align-items:center; gap:10px;">
-        <div class="qrHint">
-          Escanea con tu teléfono.<br/>
-          Scan with your phone.
-        </div>
-
-        <div id="qr_box"></div>
-
-        <div class="modalActions" style="justify-content:center;">
-          <button class="btn" id="qr_copy">Copy text</button>
-          <button class="btn primary" id="qr_done">Done</button>
-        </div>
-
-        <div class="qrHint">
-          Done ends the day and resets.
+          Copiar o compartir finaliza el día y resetea.<br/>
+          Copy or share ends the day and resets.
         </div>
       </div>
     </div>
@@ -383,7 +346,7 @@
 
 <script>
   const metrics = ["S","Z","CC","C","X"];
-  const STATE_KEY = "kpi_state_v41";
+  const STATE_KEY = "kpi_state_v4";
   const AGGR_MIN_STOPS = 20;
 
   const fmtPct = (n) => (Number.isFinite(n) ? (n * 100).toFixed(1) + "%" : "0.0%");
@@ -415,7 +378,7 @@
     return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
   };
 
-  // Prevent double-tap zoom (iOS)
+  // Prevent double-tap zoom (extra guard for iOS Safari)
   document.addEventListener("dblclick", (e) => e.preventDefault(), { passive:false });
 
   // ---------- Load ----------
@@ -426,7 +389,7 @@
     rep: saved.rep || "",
     store: saved.store || "",
     values: saved.values || {},
-    sessionStart: saved.sessionStart || null,
+    sessionStart: saved.sessionStart || null, // timestamp
   };
   metrics.forEach(k => { if (typeof state.values[k] !== "number") state.values[k] = 0; });
 
@@ -442,18 +405,11 @@
   const closeEl = document.getElementById("close");
 
   // Modals
-  const modalStart  = document.getElementById("modal_start");
+  const modalStart = document.getElementById("modal_start");
   const modalReport = document.getElementById("modal_report");
-  const modalQR     = document.getElementById("modal_qr");
-
-  const startName  = document.getElementById("start_name");
+  const startName = document.getElementById("start_name");
   const startStore = document.getElementById("start_store");
-  const reportBox  = document.getElementById("report_box");
-
-  const qrBox   = document.getElementById("qr_box");
-  const qrCopy  = document.getElementById("qr_copy");
-  const qrDone  = document.getElementById("qr_done");
-  const qrX     = document.getElementById("qr_x");
+  const reportBox = document.getElementById("report_box");
 
   // ---------- Save (instant, anti-loss on iOS) ----------
   function saveStateNow() {
@@ -532,12 +488,8 @@
       if (!state.active || !state.sessionStart) return;
       timerEl.textContent = fmtDuration(Date.now() - state.sessionStart);
     }, 1000);
-
-    if (state.active && state.sessionStart) {
-      timerEl.textContent = fmtDuration(Date.now() - state.sessionStart);
-    } else {
-      timerEl.textContent = "00:00:00";
-    }
+    if (state.active && state.sessionStart) timerEl.textContent = fmtDuration(Date.now() - state.sessionStart);
+    else timerEl.textContent = "00:00:00";
   }
   function stopTimerLoop() {
     if (timerInterval) clearInterval(timerInterval);
@@ -555,8 +507,7 @@
     });
   }
   clickOutsideToClose(modalStart, true);
-  clickOutsideToClose(modalReport, false);
-  clickOutsideToClose(modalQR, true);
+  clickOutsideToClose(modalReport, false); // don't close report by tapping outside
 
   // ---------- Session logic ----------
   function startDay(rep, store) {
@@ -609,7 +560,6 @@
     saveStateNow();
     stopTimerLoop();
     timerEl.textContent = "00:00:00";
-    closeModal(modalQR);
     closeModal(modalReport);
     showStartScreen();
   }
@@ -680,11 +630,12 @@
 
   document.getElementById("report_x").addEventListener("click", () => closeModal(modalReport));
 
-  // ---------- Copy (ends day immediately) ----------
-  async function doCopy() {
+  async function doCopyOrShare(kind) {
     const confirmMsg =
-      `¿Seguro que quieres COPIAR?\nEsto finaliza el día y resetea.\n\n` +
-      `Are you sure you want to COPY?\nThis ends the day and resets.`;
+      `¿Seguro que quieres ${kind === "copy" ? "COPIAR" : "COMPARTIR"}?\n` +
+      `Esto finaliza el día y resetea.\n\n` +
+      `Are you sure you want to ${kind === "copy" ? "COPY" : "SHARE"}?\n` +
+      `This ends the day and resets.`;
 
     if (!confirm(confirmMsg)) return;
 
@@ -692,85 +643,47 @@
     const text = buildReport(endTs);
 
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
+      if (kind === "share") {
+        if (navigator.share) {
+          await navigator.share({ title: "KPI Report", text });
+        } else if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          alert("No hay Share nativo aquí. Se copió al portapapeles.\nNo native Share here. Copied to clipboard.");
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          alert("No hay Share nativo aquí. Se copió al portapapeles.\nNo native Share here. Copied to clipboard.");
+        }
       } else {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+        }
       }
+
       finalizeAndReset();
     } catch (_) {
-      alert("No se pudo copiar.\nCould not copy.");
+      alert("No se pudo completar la acción. No se finalizó el día.\nAction failed. Day was not ended.");
     }
   }
 
-  document.getElementById("copy_btn").addEventListener("click", doCopy);
-
-  // ---------- QR Share (ends day on Done) ----------
-  let lastReportText = "";
-
-  function buildQR(text) {
-    // clean previous QR
-    qrBox.innerHTML = "";
-    try {
-      new QRCode(qrBox, {
-        text,
-        width: 240,
-        height: 240,
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    } catch (e) {
-      // fallback: show text if QR lib fails
-      qrBox.innerHTML = `<div style="color:#111; max-width:260px; font-size:12px;">QR error. Copy text instead.</div>`;
-    }
-  }
-
-  document.getElementById("share_btn").addEventListener("click", () => {
-    const confirmMsg =
-      `¿Seguro que quieres QR/COMPARTIR?\nEsto finaliza el día al tocar Done.\n\n` +
-      `Are you sure you want QR/SHARE?\nThis ends the day when you tap Done.`;
-
-    if (!confirm(confirmMsg)) return;
-
-    const endTs = Date.now();
-    lastReportText = buildReport(endTs);
-
-    closeModal(modalReport);
-    buildQR(lastReportText);
-    openModal(modalQR);
-  });
-
-  qrX.addEventListener("click", () => closeModal(modalQR));
-
-  qrCopy.addEventListener("click", async () => {
-    try {
-      if (!lastReportText) return;
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(lastReportText);
-        alert("Copied.");
-      } else {
-        alert("Clipboard not available here.");
-      }
-    } catch {
-      alert("Could not copy.");
-    }
-  });
-
-  qrDone.addEventListener("click", () => {
-    const msg =
-      `¿Listo? Esto finaliza el día y resetea.\n\n` +
-      `Done? This ends the day and resets.`;
-    if (!confirm(msg)) return;
-    finalizeAndReset();
-  });
+  document.getElementById("copy_btn").addEventListener("click", () => doCopyOrShare("copy"));
+  document.getElementById("share_btn").addEventListener("click", () => doCopyOrShare("share"));
 
   // ---------- Init ----------
   (function init() {
     renderHeader();
+
     if (state.active && state.sessionStart && state.rep && state.store) {
       showSessionScreen();
       startTimerLoop();
