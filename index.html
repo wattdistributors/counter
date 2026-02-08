@@ -62,7 +62,7 @@
 
     .sessionInfo{
       width:100%;
-      box-sizing: border-box;          /* ✅ anti overflow iOS */
+      box-sizing: border-box;
       display:flex;
       justify-content:space-between;
       gap:12px;
@@ -72,7 +72,7 @@
       border-radius: 14px;
       background: rgba(255,255,255,.10);
       border: 1px solid rgba(255,255,255,.18);
-      overflow:hidden;                 /* ✅ extra guard */
+      overflow:hidden;
     }
 
     .sessionInfo .left{
@@ -90,8 +90,8 @@
     }
 
     .timerBox{
-      flex: 0 0 120px;                 /* ✅ no se sale */
-      text-align:center;               /* ✅ centrado */
+      flex: 0 0 120px;
+      text-align:center;
     }
     .timerBox .t1{ font-size:12px; opacity:.9; }
     .timerBox .t2{ font-size:18px; font-weight:900; letter-spacing:.02em; margin-top:3px; }
@@ -229,10 +229,32 @@
       word-break: break-word;
     }
 
+    /* QR box */
+    .qrWrap{
+      display:flex;
+      justify-content:center;
+      margin: 8px 0 10px;
+    }
+    .qrCanvas{
+      background:#fff;
+      padding:10px;
+      border-radius:14px;
+      width: 220px;
+      height: 220px;
+      box-sizing:border-box;
+    }
+    .qrHint{
+      margin-top:6px;
+      font-size:12px;
+      opacity:.85;
+      text-align:center;
+    }
+
     @media (max-width: 420px){
       .pill{ width: 290px; }
       .grid2{ grid-template-columns: 1fr; }
       .timerBox{ flex-basis: 112px; }
+      .qrCanvas{ width: 200px; height: 200px; }
     }
   </style>
 </head>
@@ -275,11 +297,11 @@
 
         <div class="indicators">
           <div class="ind">
-            <div class="k">% Agresividad (Z/S)</div>
+            <div class="k">% Agresividad / Aggressiveness (Z/S)</div>
             <div class="v" id="aggr">—</div>
           </div>
           <div class="ind">
-            <div class="k">% Cierre (X/Z)</div>
+            <div class="k">% Cierre / Close (X/Z)</div>
             <div class="v" id="close">0.0%</div>
           </div>
         </div>
@@ -289,7 +311,7 @@
         </div>
       </div>
 
-      <div class="footer">KPIs Counter v4.0 — Designed by Alen Cordero</div>
+      <div class="footer">KPIs Counter v4.1 — Designed by Alen Cordero</div>
     </div>
   </div>
 
@@ -331,22 +353,40 @@
         <button class="xbtn" id="report_x" aria-label="Back">×</button>
       </div>
       <div class="modalBody">
+        <div class="qrWrap">
+          <canvas id="qr_canvas" class="qrCanvas"></canvas>
+        </div>
+        <div class="qrHint" id="qr_hint">
+          Escanea el QR con tu celular para ver/copiar el reporte.<br/>
+          Scan the QR with your phone to view/copy the report.
+        </div>
+
         <div class="reportBox" id="report_box">—</div>
+
         <div class="modalActions">
           <button class="btn" id="copy_btn">Copiar / Copy</button>
           <button class="btn primary" id="share_btn">Compartir / Share</button>
         </div>
+
         <div style="margin-top:10px; opacity:.8; font-size:12px;">
           Copiar o compartir finaliza el día y resetea.<br/>
           Copy or share ends the day and resets.
+        </div>
+
+        <div style="margin-top:8px; opacity:.75; font-size:11px;">
+          Nota: Si el reporte es muy largo, algunos teléfonos pueden fallar al escanear QR.<br/>
+          Note: If the report is very long, some phones may struggle scanning the QR.
         </div>
       </div>
     </div>
   </div>
 
+  <!-- QR library (simple) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
 <script>
   const metrics = ["S","Z","CC","C","X"];
-  const STATE_KEY = "kpi_state_v4";
+  const STATE_KEY = "kpi_state_v4_1";
   const AGGR_MIN_STOPS = 20;
 
   const fmtPct = (n) => (Number.isFinite(n) ? (n * 100).toFixed(1) + "%" : "0.0%");
@@ -389,7 +429,7 @@
     rep: saved.rep || "",
     store: saved.store || "",
     values: saved.values || {},
-    sessionStart: saved.sessionStart || null, // timestamp
+    sessionStart: saved.sessionStart || null,
   };
   metrics.forEach(k => { if (typeof state.values[k] !== "number") state.values[k] = 0; });
 
@@ -411,6 +451,14 @@
   const startStore = document.getElementById("start_store");
   const reportBox = document.getElementById("report_box");
 
+  // QR
+  const qrCanvas = document.getElementById("qr_canvas");
+  const qrHint = document.getElementById("qr_hint");
+
+  // Saved report snapshot (so QR + Copy/Share are EXACTLY the same)
+  let reportEndTs = null;
+  let reportTextSnapshot = "";
+
   // ---------- Save (instant, anti-loss on iOS) ----------
   function saveStateNow() {
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
@@ -421,6 +469,20 @@
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") { try { saveStateNow(); } catch {} }
   });
+
+  // ---------- Modal helpers (lock scroll to avoid iOS weirdness) ----------
+  function lockScroll(lock){ document.body.style.overflow = lock ? "hidden" : ""; }
+  function openModal(el) { el.classList.add("show"); lockScroll(true); }
+  function closeModal(el) { el.classList.remove("show"); lockScroll(false); }
+
+  function clickOutsideToClose(overlayEl, allow) {
+    overlayEl.addEventListener("click", (e) => {
+      if (!allow) return;
+      if (e.target === overlayEl) closeModal(overlayEl);
+    });
+  }
+  clickOutsideToClose(modalStart, true);
+  clickOutsideToClose(modalReport, false); // don't close report by tapping outside
 
   // ---------- UI ----------
   const valEls = {};
@@ -496,19 +558,6 @@
     timerInterval = null;
   }
 
-  // ---------- Modals helpers ----------
-  function openModal(el) { el.classList.add("show"); }
-  function closeModal(el) { el.classList.remove("show"); }
-
-  function clickOutsideToClose(overlayEl, allow) {
-    overlayEl.addEventListener("click", (e) => {
-      if (!allow) return;
-      if (e.target === overlayEl) closeModal(overlayEl);
-    });
-  }
-  clickOutsideToClose(modalStart, true);
-  clickOutsideToClose(modalReport, false); // don't close report by tapping outside
-
   // ---------- Session logic ----------
   function startDay(rep, store) {
     state.date = isoDateLocal();
@@ -564,6 +613,30 @@
     showStartScreen();
   }
 
+  // ---------- QR (simple: QR contains the report TEXT) ----------
+  async function renderQRFromText(text){
+    // Clear hint
+    qrHint.textContent =
+      "Escanea el QR con tu celular para ver/copiar el reporte.\n" +
+      "Scan the QR with your phone to view/copy the report.";
+
+    try{
+      await QRCode.toCanvas(qrCanvas, text, {
+        errorCorrectionLevel: "M",
+        margin: 1,
+        scale: 6
+      });
+    }catch(err){
+      // If too long or something fails, show a clear message
+      const ctx = qrCanvas.getContext("2d");
+      ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+
+      qrHint.textContent =
+        "QR no disponible (reporte muy largo). Usa Copiar/Compartir.\n" +
+        "QR unavailable (report too long). Use Copy/Share.";
+    }
+  }
+
   // ---------- Metrics interactions (tap and hold repeat) ----------
   function bump(k, d) {
     const prev = state.values[k];
@@ -592,13 +665,18 @@
     if (!state.active) return;
     const b = e.target.closest("button[data-k]");
     if (!b) return;
+
     e.preventDefault();
+
+    // Keep hold stable even if finger moves a little
+    try { b.setPointerCapture(e.pointerId); } catch {}
+
     startHold(b.dataset.k, Number(b.dataset.d));
   }, { passive:false });
 
   document.addEventListener("pointerup", stopHold);
   document.addEventListener("pointercancel", stopHold);
-  document.addEventListener("pointerleave", stopHold);
+  document.addEventListener("pointerout", stopHold);
 
   // ---------- Buttons ----------
   document.getElementById("start_day").addEventListener("click", () => {
@@ -622,9 +700,16 @@
     startDay(rep, store);
   });
 
-  document.getElementById("finish_day").addEventListener("click", () => {
-    const endTs = Date.now();
-    reportBox.textContent = buildReport(endTs);
+  document.getElementById("finish_day").addEventListener("click", async () => {
+    // Snapshot once -> QR, preview, copy, share are EXACTLY the same
+    reportEndTs = Date.now();
+    reportTextSnapshot = buildReport(reportEndTs);
+
+    reportBox.textContent = reportTextSnapshot;
+
+    // Create QR that contains the SAME report text
+    await renderQRFromText(reportTextSnapshot);
+
     openModal(modalReport);
   });
 
@@ -639,8 +724,8 @@
 
     if (!confirm(confirmMsg)) return;
 
-    const endTs = Date.now();
-    const text = buildReport(endTs);
+    // Use the exact same snapshot as the modal (if available)
+    const text = reportTextSnapshot || buildReport(Date.now());
 
     try {
       if (kind === "share") {
@@ -670,6 +755,10 @@
           ta.remove();
         }
       }
+
+      // Reset snapshot after finishing
+      reportEndTs = null;
+      reportTextSnapshot = "";
 
       finalizeAndReset();
     } catch (_) {
