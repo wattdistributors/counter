@@ -248,6 +248,7 @@
       letter-spacing:.02em;
       font-size:13px;
       opacity:.95;
+      text-align:center;
     }
     .qrCard{
       background: rgba(255,255,255,.92);
@@ -272,6 +273,13 @@
       font-size:12px;
       text-align:center;
       line-height:1.25;
+    }
+    .qrNote{
+      opacity:.90;
+      font-size:12px;
+      text-align:center;
+      line-height:1.25;
+      max-width: 420px;
     }
 
     @media (max-width: 420px){
@@ -353,11 +361,11 @@
         <div class="grid2">
           <div class="field">
             <label>Nombre / Name</label>
-            <input id="start_name" placeholder="Ej: Alen" autocomplete="name" />
+            <input id="start_name" placeholder="Ej: Bob" autocomplete="name" />
           </div>
           <div class="field">
             <label>Tienda / Store</label>
-            <input id="start_store" placeholder="Ej: El Rancho — Irving" />
+            <input id="start_store" placeholder="Ej: 2770 Valwood - Irving" />
           </div>
         </div>
         <div class="modalActions">
@@ -379,21 +387,31 @@
 
         <!-- QR -->
         <div id="qr_wrap" class="qrWrap" style="display:none;">
-          <div class="qrTitle">Open this report on your phone</div>
+          <div class="qrTitle">Abrir reporte en el teléfono / Open report on your phone</div>
           <div class="qrCard">
             <div id="qr_box"></div>
           </div>
-          <div class="qrHint">Scan with your phone camera • Then Copy/Share</div>
+          
+          <!-- ✅ New: Tablet instruction note (bilingual) -->
+          <div class="qrNote" id="qr_note">
+            Escanea el QR y envía el reporte desde tu teléfono. 
+            Scan the QR and send the report from your phone.
+          </div>
         </div>
 
         <div class="reportBox" id="report_box">—</div>
 
-        <div class="modalActions">
+        <div class="modalActions" id="report_actions">
+          <!-- Phone actions -->
           <button class="btn" id="copy_btn">Copy</button>
           <button class="btn primary" id="share_btn">Share</button>
+
+          <!-- Tablet action -->
+          <button class="btn primary" id="end_btn" style="display:none;">Finalizar día / End day</button>
         </div>
-        <div style="margin-top:10px; opacity:.8; font-size:12px;">
-          Copy or share ends the day and resets.
+
+        <div id="report_hint" style="margin-top:10px; opacity:.8; font-size:12px;">
+          Copia o comparte para terminar el día y resetear. / Copy or share ends the day and resets.
         </div>
       </div>
     </div>
@@ -472,6 +490,12 @@
   // QR
   const qrWrap = document.getElementById("qr_wrap");
   const qrBox = document.getElementById("qr_box");
+
+  // Report actions
+  const reportHint = document.getElementById("report_hint");
+  const endBtn = document.getElementById("end_btn");
+  const copyBtn = document.getElementById("copy_btn");
+  const shareBtn = document.getElementById("share_btn");
 
   // ---------- Save ----------
   function saveStateNow() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
@@ -626,6 +650,20 @@
     showStartScreen();
   }
 
+  // ---------- Report mode ----------
+  function setReportMode(mode) {
+    // mode: "tablet" | "phone"
+    const isPhone = mode === "phone";
+
+    // Phone: Copy/Share visible + hint visible
+    copyBtn.style.display = isPhone ? "" : "none";
+    shareBtn.style.display = isPhone ? "" : "none";
+    reportHint.style.display = isPhone ? "" : "none";
+
+    // Tablet: only End day button
+    endBtn.style.display = isPhone ? "none" : "";
+  }
+
   // ---------- QR ----------
   function makeShareUrlFromReport(text) {
     const payload = LZString.compressToEncodedURIComponent(text);
@@ -661,6 +699,10 @@
 
       // Phone view: no need to show QR
       qrWrap.style.display = "none";
+
+      // Phone: show copy/share + hint
+      setReportMode("phone");
+
       openModal(modalReport);
       return true;
     } catch {
@@ -740,13 +782,14 @@
     });
   });
 
+  // Tablet: End day -> show QR + only End button
   document.getElementById("finish_day").addEventListener("click", () => {
     const endTs = Date.now();
     const text = buildReport(endTs);
     reportBox.textContent = text;
 
-    // Tablet: show QR
     showQRForText(text);
+    setReportMode("tablet");
 
     openModal(modalReport);
   });
@@ -798,8 +841,18 @@
     }
   }
 
-  document.getElementById("copy_btn").addEventListener("click", () => doCopyOrShare("copy"));
-  document.getElementById("share_btn").addEventListener("click", () => doCopyOrShare("share"));
+  copyBtn.addEventListener("click", () => doCopyOrShare("copy"));
+  shareBtn.addEventListener("click", () => doCopyOrShare("share"));
+
+  // Tablet: End button resets after QR was scanned/sent
+  endBtn.addEventListener("click", () => {
+    const confirmMsg =
+      "¿Seguro que quieres finalizar el día y resetear?\nAre you sure you want to end the day and reset?";
+    if (!confirm(confirmMsg)) return;
+
+    finalizeAndReset();
+    history.replaceState(null, "", location.pathname);
+  });
 
   // ---------- Init ----------
   (function init() {
