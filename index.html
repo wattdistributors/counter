@@ -62,7 +62,7 @@
 
     .sessionInfo{
       width:100%;
-      box-sizing: border-box;
+      box-sizing: border-box;          /* ✅ anti overflow iOS */
       display:flex;
       justify-content:space-between;
       gap:12px;
@@ -72,7 +72,7 @@
       border-radius: 14px;
       background: rgba(255,255,255,.10);
       border: 1px solid rgba(255,255,255,.18);
-      overflow:hidden;
+      overflow:hidden;                 /* ✅ extra guard */
     }
 
     .sessionInfo .left{
@@ -90,8 +90,8 @@
     }
 
     .timerBox{
-      flex: 0 0 120px;
-      text-align:center;
+      flex: 0 0 120px;                 /* ✅ no se sale */
+      text-align:center;               /* ✅ centrado */
     }
     .timerBox .t1{ font-size:12px; opacity:.9; }
     .timerBox .t2{ font-size:18px; font-weight:900; letter-spacing:.02em; margin-top:3px; }
@@ -229,35 +229,16 @@
       word-break: break-word;
     }
 
-    /* QR */
-    .qrWrap{ display:flex; justify-content:center; margin: 8px 0 10px; }
-    .qrCanvas{
-      background:#fff;
-      padding:10px;
-      border-radius:14px;
-      width: 220px; height: 220px;
-      box-sizing:border-box;
-    }
-    .qrHint{ margin-top:6px; font-size:12px; opacity:.85; text-align:center; }
-
-    /* Viewer mode (cuando abres desde QR) */
-    .viewerWrap{
-      width:min(720px, 94vw);
-      padding: 22px 14px 26px;
-    }
-
     @media (max-width: 420px){
       .pill{ width: 290px; }
       .grid2{ grid-template-columns: 1fr; }
       .timerBox{ flex-basis: 112px; }
-      .qrCanvas{ width: 200px; height: 200px; }
     }
   </style>
 </head>
 
 <body>
-  <!-- Main app -->
-  <div class="wrap" id="app_wrap">
+  <div class="wrap">
     <div class="card">
 
       <div class="topbar">
@@ -294,11 +275,11 @@
 
         <div class="indicators">
           <div class="ind">
-            <div class="k">% Agresividad / Aggressiveness (Z/S)</div>
+            <div class="k">% Agresividad (Z/S)</div>
             <div class="v" id="aggr">—</div>
           </div>
           <div class="ind">
-            <div class="k">% Cierre / Close (X/Z)</div>
+            <div class="k">% Cierre (X/Z)</div>
             <div class="v" id="close">0.0%</div>
           </div>
         </div>
@@ -308,28 +289,7 @@
         </div>
       </div>
 
-      <div class="footer">KPIs Counter v4.2 — Designed by Alen Cordero</div>
-    </div>
-  </div>
-
-  <!-- Viewer (cuando abres desde QR) -->
-  <div class="viewerWrap" id="viewer_wrap" style="display:none;">
-    <div class="card">
-      <div class="title">KPI Report</div>
-      <div class="subtitle" style="margin-top:6px; opacity:.85;">
-        Abierto desde QR — Opened from QR
-      </div>
-
-      <div class="reportBox" id="viewer_report" style="margin-top:12px;">—</div>
-
-      <div class="btnrow" style="margin-top:12px; justify-content:flex-end;">
-        <button class="btn" id="viewer_copy">Copiar / Copy</button>
-        <button class="btn primary" id="viewer_share">Compartir / Share</button>
-      </div>
-
-      <div style="margin-top:10px; opacity:.8; font-size:12px;">
-        Tip: Copia o comparte directo desde tu celular.
-      </div>
+      <div class="footer">KPIs Counter v4.0 — Designed by Alen Cordero</div>
     </div>
   </div>
 
@@ -371,21 +331,11 @@
         <button class="xbtn" id="report_x" aria-label="Back">×</button>
       </div>
       <div class="modalBody">
-        <div class="qrWrap">
-          <canvas id="qr_canvas" class="qrCanvas"></canvas>
-        </div>
-        <div class="qrHint" id="qr_hint">
-          Escanea el QR con tu celular para abrir el reporte.<br/>
-          Scan the QR to open the report on your phone.
-        </div>
-
         <div class="reportBox" id="report_box">—</div>
-
         <div class="modalActions">
           <button class="btn" id="copy_btn">Copiar / Copy</button>
           <button class="btn primary" id="share_btn">Compartir / Share</button>
         </div>
-
         <div style="margin-top:10px; opacity:.8; font-size:12px;">
           Copiar o compartir finaliza el día y resetea.<br/>
           Copy or share ends the day and resets.
@@ -394,13 +344,9 @@
     </div>
   </div>
 
-  <!-- Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
-
 <script>
   const metrics = ["S","Z","CC","C","X"];
-  const STATE_KEY = "kpi_state_v4_2";
+  const STATE_KEY = "kpi_state_v4";
   const AGGR_MIN_STOPS = 20;
 
   const fmtPct = (n) => (Number.isFinite(n) ? (n * 100).toFixed(1) + "%" : "0.0%");
@@ -443,14 +389,11 @@
     rep: saved.rep || "",
     store: saved.store || "",
     values: saved.values || {},
-    sessionStart: saved.sessionStart || null,
+    sessionStart: saved.sessionStart || null, // timestamp
   };
   metrics.forEach(k => { if (typeof state.values[k] !== "number") state.values[k] = 0; });
 
   // ---------- DOM ----------
-  const appWrap = document.getElementById("app_wrap");
-  const viewerWrap = document.getElementById("viewer_wrap");
-  const viewerReport = document.getElementById("viewer_report");
   const todayDateEl = document.getElementById("today_date");
   const startScreen = document.getElementById("start_screen");
   const sessionScreen = document.getElementById("session_screen");
@@ -468,16 +411,10 @@
   const startStore = document.getElementById("start_store");
   const reportBox = document.getElementById("report_box");
 
-  // QR
-  const qrCanvas = document.getElementById("qr_canvas");
-  const qrHint = document.getElementById("qr_hint");
-
-  // Snapshot (exact same report everywhere)
-  let reportEndTs = null;
-  let reportTextSnapshot = "";
-
-  // ---------- Save ----------
-  function saveStateNow() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+  // ---------- Save (instant, anti-loss on iOS) ----------
+  function saveStateNow() {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  }
   function saveState() { try { saveStateNow(); } catch {} }
 
   window.addEventListener("pagehide", () => { try { saveStateNow(); } catch {} });
@@ -485,23 +422,11 @@
     if (document.visibilityState === "hidden") { try { saveStateNow(); } catch {} }
   });
 
-  // ---------- Modal helpers ----------
-  function lockScroll(lock){ document.body.style.overflow = lock ? "hidden" : ""; }
-  function openModal(el) { el.classList.add("show"); lockScroll(true); }
-  function closeModal(el) { el.classList.remove("show"); lockScroll(false); }
-
-  function clickOutsideToClose(overlayEl, allow) {
-    overlayEl.addEventListener("click", (e) => {
-      if (!allow) return;
-      if (e.target === overlayEl) closeModal(overlayEl);
-    });
-  }
-  clickOutsideToClose(modalStart, true);
-  clickOutsideToClose(modalReport, false);
-
   // ---------- UI ----------
   const valEls = {};
-  function renderHeader() { todayDateEl.textContent = `Fecha: ${state.date}`; }
+  function renderHeader() {
+    todayDateEl.textContent = `Fecha: ${state.date}`;
+  }
 
   function renderSessionInfo() {
     whoLine.textContent = `${state.rep || "—"} • ${state.store || "—"}`;
@@ -571,6 +496,19 @@
     timerInterval = null;
   }
 
+  // ---------- Modals helpers ----------
+  function openModal(el) { el.classList.add("show"); }
+  function closeModal(el) { el.classList.remove("show"); }
+
+  function clickOutsideToClose(overlayEl, allow) {
+    overlayEl.addEventListener("click", (e) => {
+      if (!allow) return;
+      if (e.target === overlayEl) closeModal(overlayEl);
+    });
+  }
+  clickOutsideToClose(modalStart, true);
+  clickOutsideToClose(modalReport, false); // don't close report by tapping outside
+
   // ---------- Session logic ----------
   function startDay(rep, store) {
     state.date = isoDateLocal();
@@ -586,6 +524,7 @@
 
   function buildReport(endTs) {
     const S = state.values.S, Z = state.values.Z, CC = state.values.CC, C = state.values.C, X = state.values.X;
+
     const aggr = (S >= AGGR_MIN_STOPS && S > 0) ? (Z / S) : null;
     const close = (Z > 0) ? (X / Z) : 0;
 
@@ -625,60 +564,6 @@
     showStartScreen();
   }
 
-  // ---------- QR link (same page, compressed in #hash) ----------
-  function makeShareLinkFromText(reportText){
-    const packed = LZString.compressToEncodedURIComponent(reportText);
-    const base = location.origin + location.pathname; // this same file
-    return `${base}#r=${packed}`;
-  }
-
-  async function renderQRFromLink(link){
-    qrHint.textContent =
-      "Escanea el QR con tu celular para abrir el reporte.\n" +
-      "Scan the QR to open the report on your phone.";
-
-    await QRCode.toCanvas(qrCanvas, link, {
-      errorCorrectionLevel: "M",
-      margin: 1,
-      scale: 6
-    });
-  }
-
-  // ---------- Viewer mode (when opened from QR) ----------
-  function getReportFromHash(){
-    const h = location.hash || "";
-    const m = h.match(/r=([^&]+)/);
-    if(!m) return null;
-    try{
-      return LZString.decompressFromEncodedURIComponent(m[1]);
-    }catch(e){
-      return null;
-    }
-  }
-
-  async function copyText(text){
-    try{
-      await navigator.clipboard.writeText(text);
-      alert("Copied!");
-    }catch(e){
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-      alert("Copied!");
-    }
-  }
-
-  async function shareText(text){
-    if(navigator.share){
-      try{ await navigator.share({ title:"KPI Report", text }); } catch(e){}
-    }else{
-      await copyText(text);
-    }
-  }
-
   // ---------- Metrics interactions (tap and hold repeat) ----------
   function bump(k, d) {
     const prev = state.values[k];
@@ -708,13 +593,12 @@
     const b = e.target.closest("button[data-k]");
     if (!b) return;
     e.preventDefault();
-    try { b.setPointerCapture(e.pointerId); } catch {}
     startHold(b.dataset.k, Number(b.dataset.d));
   }, { passive:false });
 
   document.addEventListener("pointerup", stopHold);
   document.addEventListener("pointercancel", stopHold);
-  document.addEventListener("pointerout", stopHold);
+  document.addEventListener("pointerleave", stopHold);
 
   // ---------- Buttons ----------
   document.getElementById("start_day").addEventListener("click", () => {
@@ -738,16 +622,9 @@
     startDay(rep, store);
   });
 
-  document.getElementById("finish_day").addEventListener("click", async () => {
-    reportEndTs = Date.now();
-    reportTextSnapshot = buildReport(reportEndTs);
-
-    reportBox.textContent = reportTextSnapshot;
-
-    // QR now encodes a SHORT link (reliable)
-    const link = makeShareLinkFromText(reportTextSnapshot);
-    await renderQRFromLink(link);
-
+  document.getElementById("finish_day").addEventListener("click", () => {
+    const endTs = Date.now();
+    reportBox.textContent = buildReport(endTs);
     openModal(modalReport);
   });
 
@@ -762,14 +639,38 @@
 
     if (!confirm(confirmMsg)) return;
 
-    const text = reportTextSnapshot || buildReport(Date.now());
+    const endTs = Date.now();
+    const text = buildReport(endTs);
 
     try {
-      if (kind === "share") await shareText(text);
-      else await copyText(text);
+      if (kind === "share") {
+        if (navigator.share) {
+          await navigator.share({ title: "KPI Report", text });
+        } else if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          alert("No hay Share nativo aquí. Se copió al portapapeles.\nNo native Share here. Copied to clipboard.");
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          alert("No hay Share nativo aquí. Se copió al portapapeles.\nNo native Share here. Copied to clipboard.");
+        }
+      } else {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+        }
+      }
 
-      reportEndTs = null;
-      reportTextSnapshot = "";
       finalizeAndReset();
     } catch (_) {
       alert("No se pudo completar la acción. No se finalizó el día.\nAction failed. Day was not ended.");
@@ -779,30 +680,8 @@
   document.getElementById("copy_btn").addEventListener("click", () => doCopyOrShare("copy"));
   document.getElementById("share_btn").addEventListener("click", () => doCopyOrShare("share"));
 
-  // Viewer buttons
-  document.getElementById("viewer_copy").addEventListener("click", async () => {
-    const rep = getReportFromHash();
-    if (!rep) return;
-    await copyText(rep);
-  });
-  document.getElementById("viewer_share").addEventListener("click", async () => {
-    const rep = getReportFromHash();
-    if (!rep) return;
-    await shareText(rep);
-  });
-
   // ---------- Init ----------
   (function init() {
-    // If opened from QR (#r=...), show viewer mode
-    const repFromQr = getReportFromHash();
-    if (repFromQr) {
-      appWrap.style.display = "none";
-      viewerWrap.style.display = "";
-      viewerReport.textContent = repFromQr;
-      return;
-    }
-
-    // Normal app
     renderHeader();
 
     if (state.active && state.sessionStart && state.rep && state.store) {
