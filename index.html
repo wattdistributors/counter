@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>KPIs Counter</title>
+  <title>RetailFlow Tracker</title>
 
   <style>
     :root{
@@ -20,33 +20,58 @@
       --calChip: rgba(91, 169, 216, .18);
       --calChipLine: rgba(173, 224, 250, .30);
       --calShadow: 0 18px 55px rgba(0,0,0,.22);
+      --radiusLg: 20px;
+      --radiusMd: 14px;
+      --surfaceBorder: rgba(255,255,255,.14);
+      --surfaceBg: rgba(255,255,255,.12);
+      --shadowSoft: 0 10px 24px rgba(4,28,46,.20);
     }
 
-    html, body { touch-action: manipulation; min-height:100%; background: linear-gradient(150deg, var(--bg1), var(--bg2)); }
+    /* Global no-overscroll fix (iOS mini-scroll / top-gap prevention) */
+    *{ box-sizing:border-box; }
+
+    html, body {
+      min-height:100%;
+      margin:0;
+      overflow-x:hidden;
+      touch-action:manipulation;
+      background: linear-gradient(150deg, var(--bg1), var(--bg2));
+    }
 
     body{
-      margin:0; min-height:100dvh; display:flex; justify-content:center; align-items:center;
+      display:block;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
       background: radial-gradient(130% 120% at 15% 0%, rgba(150,210,242,.24), transparent 62%), linear-gradient(150deg, var(--bg1), var(--bg2));
       color:#fff;
-      overflow-x:hidden; /* avoid sideways scroll */
-      overscroll-behavior-y: none;
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior-y:auto;
+      padding-top:env(safe-area-inset-top, 0px);
+      padding-bottom:env(safe-area-inset-bottom, 0px);
     }
 
-    .wrap{ width:min(620px, 99vw); padding:22px 4px 26px; }
+    /* Global reusable shell: same width for Counter / Calendar / Progress */
+    .app-shell {
+      width: min(96vw, 980px);
+      margin: 0 auto;
+      padding: 16px 18px 28px;
+      box-sizing: border-box;
+    }
 
     .card{
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 20px;
-      padding: 14px;
+      background: var(--surfaceBg);
+      border: 1px solid var(--surfaceBorder);
+      border-radius: var(--radiusLg);
+      padding: clamp(12px, 1.4vw, 16px);
       backdrop-filter: blur(12px) saturate(130%);
       -webkit-backdrop-filter: blur(12px) saturate(130%);
-      box-shadow: 0 10px 24px rgba(4,28,46,.20);
+      box-shadow: var(--shadowSoft);
       display:flex;
       flex-direction:column;
-      height:min(920px, 94vh);
-      overflow:hidden;
+      width:100%;
+      min-height:calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 44px);
+      overflow:visible;
+      transition: box-shadow .2s ease, border-color .2s ease;
     }
 
     .appHeader{
@@ -63,32 +88,83 @@
     .appMain{
       flex:1 1 auto;
       min-height:0;
-      overflow-y:auto;
-      overflow-x:hidden;
-      -webkit-overflow-scrolling: touch;
-      padding-right:2px;
+      padding-right:0;
       display:flex;
       flex-direction:column;
+      overflow:visible;
     }
 
     .topbar{
-      display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
-      margin-bottom:6px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-bottom:10px;
+      padding:8px 2px 10px;
+      border-bottom:1px solid rgba(255,255,255,.12);
     }
 
-    .title{ font-weight:700; letter-spacing:.015em; font-size:19px; line-height:1.1; }
-    .subtitle{ opacity:.75; font-size:13px; margin-top:2px; }
+    .topbarRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
 
-    .btnrow{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .topbarRowMain{
+      flex-wrap:nowrap;
+    }
+
+    .topbarRowSub{
+      flex-wrap:wrap;
+      row-gap:8px;
+    }
+
+    .topbarTitle{
+      font-weight:800;
+      letter-spacing:.015em;
+      font-size:22px;
+      line-height:1.08;
+      color:rgba(246,252,255,.98);
+    }
+
+    .topbarDate{
+      opacity:.78;
+      font-size:13px;
+      line-height:1.2;
+      color:rgba(220,244,255,.92);
+    }
+
+    .topbarActions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-left:auto;
+    }
+
+    .topbarLangBtn{
+      min-width:56px;
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.06em;
+      text-align:center;
+    }
 
     .btn{
+      min-height:44px;
       border:1px solid rgba(255,255,255,.18);
       background:rgba(255,255,255,.10);
       color:#fff; padding:10px 12px; border-radius:12px;
       cursor:pointer; font-size:14px; font-weight:700;
       user-select:none; touch-action: manipulation;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease;
     }
-    .btn:active{ transform: scale(.98); }
+    .btn:hover{ background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.26); }
+    .btn:focus-visible{ outline:2px solid rgba(187,232,255,.75); outline-offset:2px; }
+    .btn:active{ transform: translateY(1px) scale(.985); }
 
     .btn.primary{
       background: rgba(255,255,255,.22);
@@ -127,6 +203,329 @@
       text-overflow:ellipsis;
     }
 
+
+
+    #authRoot{
+      min-height:100dvh;
+      width:100%;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:calc(16px + env(safe-area-inset-top, 0px)) 18px calc(16px + env(safe-area-inset-bottom, 0px));
+      box-sizing:border-box;
+    }
+
+
+    .authBackdropOrb{
+      position:fixed;
+      z-index:0;
+      pointer-events:none;
+      border-radius:999px;
+      filter:blur(2px);
+      opacity:.35;
+    }
+
+    .authBackdropOrb.one{
+      width:210px;
+      height:210px;
+      background:radial-gradient(circle at 30% 30%, rgba(179,226,255,.42), rgba(120,182,221,.06));
+      top:8vh;
+      left:max(2vw, 8px);
+    }
+
+    .authBackdropOrb.two{
+      width:180px;
+      height:180px;
+      background:radial-gradient(circle at 65% 30%, rgba(175,227,255,.28), rgba(107,167,212,.04));
+      right:max(4vw, 12px);
+      bottom:10vh;
+    }
+
+    #appRoot{
+      opacity:1;
+    }
+
+    .authShell{
+      width:min(420px, 100%);
+      margin:0 auto;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+      position:relative;
+      z-index:1;
+    }
+
+    .authBrand{
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      color:rgba(242,252,255,.97);
+    }
+
+    .authBrandTitle{
+      margin:0;
+      font-size:34px;
+      font-weight:800;
+      letter-spacing:.01em;
+      line-height:1.06;
+    }
+
+    .authBrandSubtitle{
+      margin:0;
+      font-size:13px;
+      color:rgba(224,244,255,.82);
+      font-weight:500;
+      letter-spacing:.02em;
+    }
+
+    .authCard{
+      width:100%;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 20px;
+      padding: 20px 18px;
+      backdrop-filter: blur(12px) saturate(130%);
+      -webkit-backdrop-filter: blur(12px) saturate(130%);
+      box-shadow: 0 10px 24px rgba(4,28,46,.20);
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      transition: transform .22s ease, box-shadow .22s ease;
+    }
+
+    .authCard.loading{
+      animation: authCardPulse .7s ease-in-out infinite alternate;
+    }
+
+    .authCard.shake{
+      animation: authShake .24s ease;
+    }
+
+    .authTitle{
+      margin:0;
+      font-size:24px;
+      font-weight:700;
+      letter-spacing:.01em;
+      text-align:center;
+      color:rgba(244,252,255,.98);
+    }
+
+    .authCardIntro{
+      margin:-6px 0 2px;
+      text-align:center;
+      font-size:12px;
+      color:rgba(228,246,255,.78);
+      letter-spacing:.02em;
+    }
+
+    .authInput{
+      width:100%;
+      box-sizing:border-box;
+      border:1px solid rgba(255,255,255,.24);
+      background:rgba(255,255,255,.10);
+      color:#fff;
+      border-radius:12px;
+      min-height:48px;
+      padding:12px 14px;
+      font-size:15px;
+      line-height:1.2;
+      outline:none;
+    }
+
+    .authInput::placeholder{ color:rgba(233,247,255,.82); }
+
+    .authActions{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .authSecondaryBtn{
+      min-height:52px;
+      border-radius:14px;
+      font-size:16px;
+      font-weight:700;
+    }
+
+    .authTopRow{
+      width:100%;
+      display:flex;
+      justify-content:flex-end;
+      margin-bottom:2px;
+    }
+
+    .authTopLangBtn{
+      min-width:94px;
+      border-radius:999px;
+      padding:8px 12px;
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .authLoginBtn{
+      width:100%;
+      min-height:52px;
+      padding:12px 14px;
+      border-radius:14px;
+      font-size:18px;
+      font-weight:800;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+    }
+
+    .authLoginBtn:disabled{
+      cursor:not-allowed;
+      opacity:.84;
+    }
+
+    .authSpinner{
+      width:16px;
+      height:16px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.35);
+      border-top-color:rgba(255,255,255,.95);
+      animation: authSpin .72s linear infinite;
+      display:none;
+      flex:0 0 auto;
+    }
+
+    .authLoginBtn.loading .authSpinner{
+      display:inline-block;
+    }
+
+    .authMsg{
+      min-height:20px;
+      font-size:13px;
+      color:rgba(231,248,255,.9);
+      text-align:left;
+      padding:0 2px;
+    }
+
+    .authMsg.error{
+      color:rgba(255, 190, 190, .95);
+    }
+
+    .authSecureText{
+      text-align:center;
+      font-size:12px;
+      color:rgba(228,246,255,.72);
+      margin-top:2px;
+      letter-spacing:.01em;
+    }
+
+    .authVersion{
+      text-align:center;
+      font-size:11px;
+      color:rgba(227,245,255,.46);
+      letter-spacing:.04em;
+      margin-top:2px;
+    }
+
+    .authSignupOverlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(5,24,40,.42);
+      z-index:30;
+      padding:18px;
+      box-sizing:border-box;
+    }
+
+    .authSignupOverlay.show{ display:flex; }
+
+    .authSignupModal{
+      width:min(420px, 100%);
+      background: rgba(255,255,255,.13);
+      border:1px solid rgba(255,255,255,.2);
+      border-radius:18px;
+      padding:16px;
+      backdrop-filter: blur(12px) saturate(130%);
+      -webkit-backdrop-filter: blur(12px) saturate(130%);
+      box-shadow:0 10px 24px rgba(4,28,46,.24);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .authSignupTitle{
+      margin:0;
+      text-align:center;
+      font-size:20px;
+      font-weight:700;
+    }
+
+    .authSignupMsg{
+      min-height:18px;
+      font-size:12px;
+      color:rgba(231,248,255,.9);
+    }
+
+    .authSignupMsg.error{ color:rgba(255,190,190,.95); }
+
+    .authSignupActions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+
+    @keyframes authSpin{
+      to{ transform:rotate(360deg); }
+    }
+
+    @keyframes authCardPulse{
+      from{ transform:scale(.995); box-shadow:0 10px 24px rgba(4,28,46,.20); }
+      to{ transform:scale(1); box-shadow:0 14px 30px rgba(9,50,84,.26); }
+    }
+
+    @keyframes authShake{
+      0%,100%{ transform:translateX(0); }
+      30%{ transform:translateX(-2px); }
+      70%{ transform:translateX(2px); }
+    }
+
+    .userMeta{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-left:auto;
+    }
+
+    #userEmail{
+      font-size:12px;
+      opacity:.88;
+      max-width:180px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .logoutBtn{
+      min-height:36px;
+      font-size:11px;
+      font-weight:650;
+      border-radius:999px;
+      padding:6px 10px;
+      background:rgba(255,255,255,.06);
+      border-color:rgba(255,255,255,.14);
+      color:rgba(234,247,255,.92);
+    }
+
+    .sessionActions{
+      margin-top:12px;
+      width:100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:8px;
+    }
     .startHeroTitle{
       font-size:34px;
       line-height:1.05;
@@ -196,11 +595,6 @@
       color: rgba(227,246,255,.86);
     }
     .tab:active{ transform: scale(.99); }
-     .tab.disabled{
-      opacity:.42;
-      cursor:not-allowed;
-      filter:saturate(.7);
-    }
     .tab.active{
       background: rgba(255,255,255,.14);
       border:1px solid rgba(255,255,255,.18);
@@ -792,6 +1186,188 @@
       flex-wrap: wrap;
     }
 
+
+    #modal_add_day{
+      align-items:flex-start;
+      padding: max(10px, env(safe-area-inset-top, 0px)) 12px max(10px, env(safe-area-inset-bottom, 0px));
+    }
+    #modal_add_day .modal{
+      width:min(560px, 100%);
+      height: calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 20px);
+      max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 20px);
+      display:flex;
+      flex-direction:column;
+      margin: 0 auto;
+      overflow:hidden;
+    }
+    #modal_add_day .modalBody{
+      margin-top: 2px;
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      padding-right: 2px;
+      padding-bottom: 8px;
+      min-width:0;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    #modal_add_day .grid2{
+      gap:12px;
+      margin-top:8px;
+    }
+    #modal_add_day .grid2 .field{ min-width:0; }
+    #modal_add_day .modalActions{
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      flex:0 0 auto;
+      background: rgba(14,58,88,.22);
+    }
+
+    .managerDetailActions{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:8px;
+    }
+
+    .managerAgentsTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .managerPrimaryBtn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      margin-left:auto;
+      min-width:170px;
+      background: rgba(210,239,255,.3);
+      border-color: rgba(219,243,255,.72);
+      box-shadow: 0 10px 20px rgba(6,36,61,.24);
+    }
+    .managerPrimaryBtn .plus{
+      font-size:18px;
+      font-weight:900;
+      line-height:1;
+    }
+    .managerKpiGrid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:10px;
+      margin-top:2px;
+    }
+    .managerKpiCard{
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.12);
+      padding:12px;
+      box-shadow: 0 10px 24px rgba(6,34,58,.22);
+    }
+    .managerKpiLabel{
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-weight:800;
+      color: rgba(220,242,255,.88);
+    }
+    .managerKpiValue{
+      margin-top:8px;
+      font-size:clamp(32px, 6vw, 46px);
+      line-height:1;
+      font-weight:1000;
+      color: rgba(246,253,255,.98);
+    }
+    .managerAgentsList{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .managerAgentCard{
+      width:100%;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.09);
+      padding:12px;
+      text-align:left;
+      cursor:pointer;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+    .managerAgentCard:hover{
+      background: rgba(255,255,255,.15);
+      border-color: rgba(228,246,255,.38);
+      transform: translateY(-1px);
+    }
+    .managerAgentCard.active{
+      background: rgba(222,244,255,.2);
+      border-color: rgba(230,248,255,.46);
+    }
+    .managerAgentName{
+      font-size:20px;
+      font-weight:900;
+      line-height:1.15;
+      color: rgba(246,253,255,.98);
+    }
+    .managerAgentEmail{
+      margin-top:4px;
+      font-size:12px;
+      color: rgba(209,236,252,.86);
+    }
+    .managerAgentMetrics{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:8px;
+      align-items:end;
+    }
+    .managerMetricLabel{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color: rgba(202,232,249,.82);
+      font-weight:800;
+    }
+    .managerMetricValue{
+      margin-top:4px;
+      font-size:24px;
+      line-height:1;
+      font-weight:900;
+      color: rgba(242,251,255,.98);
+    }
+    .managerMetricValue.highlight{
+      color: rgba(183,238,255,.98);
+      text-shadow: 0 0 16px rgba(135,219,255,.32);
+    }
+    .managerMetricLink{
+      font-size:13px;
+      font-weight:900;
+      color: rgba(203,238,255,.95);
+      text-align:right;
+      align-self:center;
+      white-space:nowrap;
+    }
+    .managerAgentDetail{
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px solid rgba(255,255,255,.16);
+    }
+    .btnSubtleDanger{
+      min-height:30px;
+      padding:4px 10px;
+      font-size:11px;
+      font-weight:700;
+      opacity:.8;
+      border-color: rgba(255,130,130,.34);
+      background: rgba(255,95,95,.08);
+    }
+    .btnSubtleDanger:hover{
+      opacity:1;
+      background: rgba(255,95,95,.14);
+      border-color: rgba(255,155,155,.45);
+    }
+
     .reportBox{
       width:100%;
       box-sizing:border-box;
@@ -934,12 +1510,31 @@
       }
     }
 
+    @media (min-width: 768px){
+      .app-shell{ width:min(95vw, 1020px); padding:18px 22px 30px; }
+      .topbar{ gap:12px; margin-bottom:12px; }
+      .topbarTitle{ font-size:28px; }
+      .topbarDate{ font-size:14px; }
+      .langBtn, .topbarLangBtn{ min-height:44px; font-size:13px; }
+      .userChip{ font-size:13px; padding:8px 13px; max-width:280px; }
+      .logoutBtn{ font-size:12px; }
+      .tabs{ margin-top:8px; }
+      .tab{ min-height:46px; font-size:15px; }
+      .authShell{ width:min(540px, 100%); }
+      .authCard{ padding:24px 22px; gap:16px; }
+      .authTitle{ font-size:28px; }
+      .authInput{ min-height:50px; font-size:16px; }
+    }
+
     @media (max-width: 520px){
-      .wrap{ width:100vw; padding:12px 2px 20px; }
-      .card{ padding:10px; height:min(920px,95vh); }
+      .app-shell{ width:100%; padding:12px 10px 18px; }
+      .card{ padding:10px; min-height:calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 24px); }
       .appHeader{ padding:4px 0 4px; }
       .pill{ width: 290px; }
       .grid2{ grid-template-columns: 1fr; }
+      #modal_add_day{ padding: max(8px, env(safe-area-inset-top, 0px)) 8px max(8px, env(safe-area-inset-bottom, 0px)); }
+      #modal_add_day .modal{ border-radius: 14px; }
+      #modal_add_day .modal{ height: calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16px); }
       .timerBox{ flex-basis: 112px; }
 
       /* tighter calendar on small screens so it NEVER overflows */
@@ -952,22 +1547,80 @@
 
       .statGrid{ grid-template-columns: repeat(5, minmax(0,1fr)); }
       .sumStats{ grid-template-columns: repeat(3, 1fr); }
+      .managerKpiGrid{ grid-template-columns: 1fr; }
+      .managerPrimaryBtn{ width:100%; }
+      .managerAgentMetrics{ grid-template-columns: 1fr 1fr; }
+      .managerMetricLink{ grid-column: 1 / -1; text-align:left; }
     }
+
+
   </style>
 </head>
 
 <body>
-  <div class="wrap">
+  <div id="authRoot">
+    <div class="authBackdropOrb one" aria-hidden="true"></div>
+    <div class="authBackdropOrb two" aria-hidden="true"></div>
+    <div class="authShell">
+      <div class="authTopRow">
+        <button class="btn authTopLangBtn" id="auth_lang_toggle" title="Language">ES</button>
+      </div>
+      <div class="authBrand">
+        <h1 class="authBrandTitle">RetailFlow Tracker</h1>
+        <p class="authBrandSubtitle">Control profesional de ventas retail</p>
+      </div>
+
+      <div id="authCard" class="authCard">
+        <h2 class="authTitle" id="auth_login_title">Inicia sesión</h2>
+        <div class="authCardIntro">Accede a tu panel de rendimiento diario</div>
+        <input id="authEmail" class="authInput" type="email" placeholder="tu@email.com" autocomplete="email" />
+        <input id="authPass" class="authInput" type="password" placeholder="Contraseña" autocomplete="current-password" />
+        <div class="authActions">
+          <button id="authSignupOpenBtn" class="btn authSecondaryBtn" onclick="authOpenSignup()">Crear cuenta</button>
+          <button id="authLoginBtn" class="btn primary authLoginBtn" onclick="authLogin()">
+            <span id="authLoginBtnText">Iniciar sesión</span>
+            <span class="authSpinner" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div id="authMsg" class="authMsg"></div>
+        <div class="authSecureText">Tus datos se guardan de forma segura en la nube</div>
+      </div>
+
+      <div class="authVersion">v1.0 · RetailFlow</div>
+    </div>
+
+    <div class="authSignupOverlay" id="auth_signup_overlay">
+      <div class="authSignupModal">
+        <h3 class="authSignupTitle" id="signup_title">Crear cuenta</h3>
+        <input id="signupName" class="authInput" type="text" placeholder="Nombre completo" autocomplete="name" />
+        <input id="signupTeamId" class="authInput" type="text" placeholder="ej: team-closeflow-001" autocomplete="organization" />
+        <input id="signupEmail" class="authInput" type="email" placeholder="correo@empresa.com" autocomplete="email" />
+        <input id="signupPass" class="authInput" type="password" placeholder="Contraseña" autocomplete="new-password" />
+        <input id="signupPass2" class="authInput" type="password" placeholder="Repite contraseña" autocomplete="new-password" />
+        <div id="signupMsg" class="authSignupMsg"></div>
+        <div class="authSignupActions">
+          <button class="btn" id="signup_cancel_btn" onclick="authCloseSignup()">Cancelar</button>
+          <button class="btn primary" id="signupCreateBtn" onclick="authSignup()">Crear cuenta</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="appRoot" style="display:none;">
+  <div class="app-shell">
     <div class="card">
       <div class="appHeader">
       <div class="topbar">
-        <div>
-          <div class="title" id="today_title">Retail Sales Tracker</div>
-          <div class="subtitle" id="today_date"></div>
+        <div class="topbarRow topbarRowMain">
+          <div class="topbarTitle" id="today_title">RetailFlow Tracker</div>
+          <button class="btn topbarLangBtn" id="lang_toggle" title="Cambiar idioma / Change language">ES</button>
         </div>
-        <div class="btnrow" id="top_actions">
-          <button class="btn profileBtn" id="profile_btn">Perfil</button>
-          <button class="btn langBtn" id="lang_toggle" title="Cambiar idioma / Change language">Idioma</button>
+        <div class="topbarRow topbarRowSub">
+          <div class="topbarDate" id="today_date"></div>
+          <div class="topbarActions" id="top_actions">
+            <div class="userChip"><span id="userEmail"></span></div>
+            <button class="btn logoutBtn" id="logout_btn" onclick="authLogout()">Cerrar sesión</button>
+          </div>
         </div>
       </div>
 
@@ -976,6 +1629,7 @@
         <div class="tab active" data-tab="counter" id="tab_counter_label">Contador</div>
         <div class="tab" data-tab="calendar" id="tab_calendar_label">Calendario</div>
         <div class="tab" data-tab="summary" id="tab_summary_label">Progreso</div>
+        <div class="tab" data-tab="agents" id="tab_agents_label" style="display:none;">Agentes</div>
       </div>
       </div>
 
@@ -1014,11 +1668,11 @@
             </div>
           </div>
 
-          <div class="btnrow" style="margin-top:12px; justify-content:center;">
+          <div class="sessionActions">
             <button class="btn helpBtn" id="rating_help_btn" aria-label="Ver criterios de clasificación">?</button>
-            <button class="btn primary" id="finish_day">End day</button>
+            <button class="btn primary" id="finish_day">Finalizar día</button>
           </div>
-          <div id="finish_result" class="finishResult"></div>
+          <div id="finish_result" class="finishResult" style="display:none;"></div>
         </div>
       </div>
 
@@ -1045,8 +1699,50 @@
         <div class="sumWrap" id="sum_wrap"></div>
       </div>
 
+      <!-- ============ TAB: AGENTS (MANAGER) ============ -->
+      <div id="tab_agents" style="display:none;">
+        <div class="calSurface" style="display:flex; flex-direction:column; gap:10px;">
+          <div class="managerAgentsTop">
+            <div class="statsMiniTitle" id="agents_section_title">Agentes</div>
+            <button class="btn managerPrimaryBtn" id="agents_add_btn"><span class="plus">+</span>Agregar agente</button>
+          </div>
+          <div class="managerKpiGrid" id="manager_team_kpis">
+            <div class="managerKpiCard">
+              <div class="managerKpiLabel" id="agents_kpi_active_label">Agentes activos</div>
+              <div class="managerKpiValue" id="kpi_agents_active">0</div>
+            </div>
+            <div class="managerKpiCard">
+              <div class="managerKpiLabel" id="agents_kpi_week_label">Ventas semana (X)</div>
+              <div class="managerKpiValue" id="kpi_team_week">0</div>
+            </div>
+            <div class="managerKpiCard">
+              <div class="managerKpiLabel" id="agents_kpi_month_label">Ventas mes (X)</div>
+              <div class="managerKpiValue" id="kpi_team_month">0</div>
+            </div>
+          </div>
+          <div id="agents_error" style="min-height:18px; font-size:12px; opacity:.9;"></div>
+          <div id="agents_list" class="managerAgentsList"></div>
+
+          <div id="manager_agent_detail" class="managerAgentDetail" style="display:none;">
+            <div class="calHeader">
+              <div class="iconBtn" id="mgr_cal_prev" aria-label="Previous month">‹</div>
+              <div class="calTitle" id="mgr_cal_title">—</div>
+              <div class="iconBtn" id="mgr_cal_next" aria-label="Next month">›</div>
+            </div>
+            <div class="calGrid" id="mgr_cal_grid"></div>
+            <div class="statsPanel">
+              <div class="statCard" id="mgr_week_stats"></div>
+              <div class="statCard" id="mgr_month_stats"></div>
+            </div>
+            <div class="managerDetailActions">
+              <button class="btn btnSubtleDanger" id="manager_remove_agent_btn" style="display:none;">Eliminar agente</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="footer">KPIs Counter v4.4 — Designed by Alen Cordero</div>
+
+
+      </div>
     </div>
   </div>
 
@@ -1119,14 +1815,15 @@
         <div class="reportBox" id="report_box">—</div>
 
         <div class="modalActions" id="report_actions">
-          <button class="btn" id="copy_btn">Copy</button>
-          <button class="btn primary" id="share_btn">Share</button>
+          <button class="btn" id="copy_btn">Copiar</button>
+          <button class="btn primary" id="share_btn">Compartir</button>
           <button class="btn primary" id="end_btn" style="display:none;">End day</button>
         </div>
 
         <div id="report_hint" style="margin-top:10px; opacity:.8; font-size:12px;">
           Copia o comparte para terminar el día y resetear.
         </div>
+        <div id="report_save_status" style="margin-top:6px; min-height:18px; font-size:12px; opacity:.95;"></div>
       </div>
     </div>
   </div>
@@ -1158,11 +1855,64 @@
         </div>
 
         <div class="modalActions">
-          <button class="btn" id="day_copy">Copy</button>
-          <button class="btn" id="day_share">Share</button>
+          <button class="btn" id="day_copy">Copiar</button>
+          <button class="btn" id="day_share">Compartir</button>
+          <button class="btn primary" id="day_add_missing" style="display:none;">Agregar día</button>
           <button class="btn" id="day_edit">Editar día</button>
           <button class="btn" id="day_delete">Borrar día</button>
           <button class="btn primary" id="day_save" style="display:none;">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="overlay" id="modal_add_agent">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Add agent">
+      <div class="modalHeader">
+        <div class="modalTitle" id="add_agent_title">Agregar agente</div>
+        <button class="xbtn" id="add_agent_x" aria-label="Close">×</button>
+      </div>
+      <div class="modalBody">
+        <div class="field">
+          <label id="add_agent_email_label">Email del agente</label>
+          <input id="add_agent_email" type="email" placeholder="agente@empresa.com" />
+        </div>
+        <div id="add_agent_msg" style="min-height:18px; font-size:12px;"></div>
+        <div class="modalActions">
+          <button class="btn" id="add_agent_cancel">Cancelar</button>
+          <button class="btn primary" id="add_agent_confirm">Asignar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="overlay" id="modal_add_day">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Add day">
+      <div class="modalHeader">
+        <div class="modalTitle" id="add_day_title">Agregar día</div>
+        <button class="xbtn" id="add_day_x" aria-label="Close">×</button>
+      </div>
+      <div class="modalBody">
+        <div class="grid2">
+          <div class="field"><label id="add_day_date_label">Fecha</label><input id="add_day_date" type="date" /></div>
+          <div class="field"><label id="add_day_rep_label">Nombre</label><input id="add_day_rep" type="text" /></div>
+          <div class="field" style="grid-column:1/-1;"><label id="add_day_store_label">Tienda</label><input id="add_day_store" type="text" /></div>
+          <div class="field"><label id="add_day_start_label">Inicio (opcional)</label><input id="add_day_start" type="time" /></div>
+          <div class="field"><label id="add_day_end_label">Fin (opcional)</label><input id="add_day_end" type="time" /></div>
+          <div class="field"><label>S</label><input id="add_day_s" type="number" min="0" inputmode="numeric" /></div>
+          <div class="field"><label>Z</label><input id="add_day_z" type="number" min="0" inputmode="numeric" /></div>
+          <div class="field"><label>CC</label><input id="add_day_cc" type="number" min="0" inputmode="numeric" /></div>
+          <div class="field"><label>C</label><input id="add_day_c" type="number" min="0" inputmode="numeric" /></div>
+          <div class="field"><label>X</label><input id="add_day_xv" type="number" min="0" inputmode="numeric" /></div>
+        </div>
+        <div id="add_day_msg" style="min-height:18px; font-size:12px;"></div>
+        <div class="modalActions">
+          <button class="btn" id="add_day_cancel">Cancelar</button>
+          <button class="btn primary" id="add_day_confirm">Guardar día</button>
         </div>
       </div>
     </div>
@@ -1177,6 +1927,8 @@
       </div>
       <div class="modalBody" id="rating_help_body" style="font-size:13px; line-height:1.45;"></div>
     </div>
+  </div>
+
   </div>
 
   <!-- Modal: Language -->
@@ -1196,18 +1948,6 @@
     </div>
   </div>
 
-
-  <!-- Modal: Unavailable -->
-  <div class="overlay" id="modal_unavailable">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Unavailable">
-      <div class="modalHeader">
-        <div class="modalTitle" id="unavailable_title">No disponible</div>
-        <button class="xbtn" id="unavailable_x" aria-label="Close">×</button>
-      </div>
-      <div class="modalBody" id="unavailable_msg">Función no disponible en esta versión.</div>
-    </div>
-  </div>
-
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
@@ -1216,13 +1956,11 @@
   const metrics = ["S","Z","CC","C","X"];
   const STATE_KEY = "kpi_state_v44";
   const HISTORY_KEY = "kpi_history_v1";
+  const HISTORY_KEY_PREFIX = "kpi_history_v1_uid";
+  const TEAM_KEY = "kpi_team_v1";
   const PROFILE_KEY = "kpi_profile_v1";
-  const LANG_KEY = "kpi_lang_v1";
-  const APP_STATE_KEY = "rst_app_state_v1";
-  const APP_STATE_BACKUP_KEY = "rst_app_state_backup_v1";
-  const APP_SCHEMA_VERSION = 1;
-  const APP_MODE = "agent";
-  const features = { progressEnabled: APP_MODE !== "agent" };
+  const LANG_KEY = "app_lang";
+  const LEGACY_LANG_KEY = "kpi_lang_v1";
   const AGGR_MIN_STOPS = 20;
   const MONEY_PER_X = 100;
 
@@ -1237,7 +1975,14 @@
       languageSpanish: "Español",
       languageEnglish: "Inglés",
       session: "Sesión",
-      appTitle: "Retail Sales Tracker",
+      appTitle: "RetailFlow Tracker",
+      loginTitle: "Inicia sesión",
+      loginEmailPlaceholder: "tu@email.com",
+      loginPassPlaceholder: "Contraseña",
+      loginBtn: "Iniciar sesión",
+      signupBtn: "Crear cuenta",
+      signupTitle: "Crear cuenta",
+      logoutBtn: "Cerrar sesión",
       startHeadline: "Comienza tu jornada",
       startIntro: "Registra tu día de ventas",
       startHint: "Tus datos se guardan automáticamente",
@@ -1260,6 +2005,10 @@
       missingProfile: "Primero guarda tu nombre en Perfil.",
       missingStore: "Por favor ingresa la tienda del día.",
       endConfirm: "¿Seguro que quieres finalizar el día y resetear?",
+      endDayNow: "Finalizar día",
+      savingDay: "Guardando…",
+      savedOk: "Guardado ✓",
+      saveError: "Error al guardar",
       finishResult: "Resultado",
       dayResult: "Resultado del día",
       weekStatsTitle: "Stats de la semana",
@@ -1335,13 +2084,42 @@
       qrTitle: "Abrir reporte en el teléfono",
       qrNote: "Escanea el QR y envía el reporte desde tu teléfono.",
       reportHint: "Copia o comparte para terminar el día y resetear.",
+      copyBtn: "Copiar",
+      shareBtn: "Compartir",
       monthDayYear: { month: "long", day: "numeric", year: "numeric" },
       monthDay: { month: "long", day: "numeric" },
       weekRangeJoin: "al",
-      unavailableTitle: "No disponible",
-      unavailableMsg: "Función no disponible en esta versión.",
-      resetConfirm1: "¿Seguro que quieres resetear datos?",
-      resetConfirm2: "Escribe BORRAR para confirmar"
+      tabAgents: "Agentes",
+      agentsTitle: "Agentes",
+      agentsSearchPlaceholder: "Buscar agente",
+      addAgent: "Agregar agente",
+      addAgentByEmail: "Email del agente",
+      assignAgentBtn: "Asignar",
+      userNotFoundInTeam: "Usuario no encontrado en este equipo",
+      agentAlreadyAssigned: "Este agente ya está asignado.",
+      weekXLabel: "Semana X",
+      monthXLabel: "Mes X",
+      addAgentSaved: "Agente asignado correctamente.",
+      addAgentError: "No se pudo agregar el agente.",
+      agentsEmpty: "No hay agentes asignados.",
+      removeAgent: "Eliminar agente",
+      removeAgentConfirm: "¿Eliminar este agente de tu lista?",
+      removeAgentSaved: "Agente eliminado correctamente.",
+      removeAgentError: "No se pudo eliminar el agente.",
+      agentTrail: "Agentes",
+      viewDetails: "Ver detalles",
+      hideDetails: "Ocultar detalles",
+      activeAgentsLabel: "Agentes activos",
+      teamWeekSalesLabel: "Ventas semana (X)",
+      teamMonthSalesLabel: "Ventas mes (X)",
+      readOnlyManager: "Solo lectura (manager)",
+      managerRulesNote: "Reglas sugeridas: agents solo escriben sus días; managers leen solo agentes asignados en su team; assignments sólo bajo su managerUid; acceso aislado por team.",
+      addDay: "Agregar día",
+      addDayTitle: "Agregar día",
+      addDaySave: "Guardar día",
+      addDayNeedAgent: "Primero selecciona un agente.",
+      addDaySaved: "Día agregado correctamente.",
+      optionalTime: "(opcional)"
     },
     en: {
       tabCounter: "Counter",
@@ -1353,7 +2131,14 @@
       languageSpanish: "Spanish",
       languageEnglish: "English",
       session: "Session",
-      appTitle: "Retail Sales Tracker",
+      appTitle: "RetailFlow Tracker",
+      loginTitle: "Sign in",
+      loginEmailPlaceholder: "your@email.com",
+      loginPassPlaceholder: "Password",
+      loginBtn: "Sign in",
+      signupBtn: "Create account",
+      signupTitle: "Create account",
+      logoutBtn: "Log out",
       startHeadline: "Start your day",
       startIntro: "Track your sales day",
       startHint: "Your data is saved automatically",
@@ -1376,6 +2161,10 @@
       missingProfile: "Please save your name first in Profile.",
       missingStore: "Please enter today's store.",
       endConfirm: "Are you sure you want to end the day and reset?",
+      endDayNow: "End day",
+      savingDay: "Saving…",
+      savedOk: "Saved ✓",
+      saveError: "Error saving",
       finishResult: "Result",
       dayResult: "Day result",
       weekStatsTitle: "Week stats",
@@ -1451,13 +2240,42 @@
       qrTitle: "Open report on your phone",
       qrNote: "Scan the QR and send the report from your phone.",
       reportHint: "Copy or share to end the day and reset.",
+      copyBtn: "Copy",
+      shareBtn: "Share",
       monthDayYear: { month: "long", day: "numeric", year: "numeric" },
       monthDay: { month: "long", day: "numeric" },
       weekRangeJoin: "to",
-      unavailableTitle: "Not available",
-      unavailableMsg: "Feature not available in this version.",
-      resetConfirm1: "Are you sure you want to reset data?",
-      resetConfirm2: "Type DELETE to confirm"
+      tabAgents: "Agents",
+      agentsTitle: "Agents",
+      agentsSearchPlaceholder: "Search agent",
+      addAgent: "Add agent",
+      addAgentByEmail: "Agent email",
+      assignAgentBtn: "Assign",
+      userNotFoundInTeam: "User not found in this team",
+      agentAlreadyAssigned: "This agent is already assigned.",
+      weekXLabel: "Week X",
+      monthXLabel: "Month X",
+      addAgentSaved: "Agent assigned successfully.",
+      addAgentError: "Could not add agent.",
+      agentsEmpty: "No assigned agents.",
+      removeAgent: "Remove agent",
+      removeAgentConfirm: "Remove this agent from your list?",
+      removeAgentSaved: "Agent removed successfully.",
+      removeAgentError: "Could not remove the agent.",
+      agentTrail: "Agents",
+      viewDetails: "View details",
+      hideDetails: "Hide details",
+      activeAgentsLabel: "Active agents",
+      teamWeekSalesLabel: "Team week sales (X)",
+      teamMonthSalesLabel: "Team month sales (X)",
+      readOnlyManager: "Read-only (manager)",
+      managerRulesNote: "Suggested rules: agents can write only own days; managers can read only assigned agents within team; assignments only under own managerUid; team data isolation required.",
+      addDay: "Add day",
+      addDayTitle: "Add day",
+      addDaySave: "Save day",
+      addDayNeedAgent: "Select an agent first.",
+      addDaySaved: "Day added successfully.",
+      optionalTime: "(optional)"
     }
   };
 
@@ -1499,6 +2317,12 @@
     const b = badgeLabel(badge);
     const base = ratingLabel(rating);
     return b ? `${base} · ${b}` : base;
+  }
+
+  function ratingColor(rating){
+    if (rating === "good") return "#6be795";
+    if (rating === "bad") return "#ff7f7f";
+    return "#f6d867";
   }
 
   const isoDateLocal = (d = new Date()) => {
@@ -1568,103 +2392,25 @@
 
   document.addEventListener("dblclick", (e) => e.preventDefault(), { passive:false });
 
-  function makeDefaultAppData() {
-    return {
-      language: "es",
-      profile: { rep: "" },
-      session: { active:false, date: isoDateLocal(), rep:"", store:"", values:{}, sessionStart:null },
-      history: {},
-      trainedAgentsWithCheck: 0
-    };
-  }
-
-  function normalizeAppData(input) {
-    const base = makeDefaultAppData();
-    const source = (input && typeof input === "object") ? input : {};
-    const session = (source.session && typeof source.session === "object") ? source.session : {};
-    const values = (session.values && typeof session.values === "object") ? session.values : {};
-    const history = (source.history && typeof source.history === "object") ? source.history : {};
-    const profile = (source.profile && typeof source.profile === "object") ? source.profile : {};
-    const trained = parseInt(String(source.trainedAgentsWithCheck ?? base.trainedAgentsWithCheck), 10);
-
-    const normalized = {
-      ...base,
-      ...source,
-      language: source.language === "en" ? "en" : "es",
-      profile: { ...base.profile, ...profile, rep: typeof profile.rep === "string" ? profile.rep : "" },
-      session: {
-        ...base.session,
-        ...session,
-        values: { ...base.session.values, ...values }
-      },
-      history,
-      trainedAgentsWithCheck: Number.isFinite(trained) ? Math.max(0, trained) : 0
-    };
-
-    metrics.forEach((k) => {
-      if (typeof normalized.session.values[k] !== "number") normalized.session.values[k] = 0;
-    });
-
-    return normalized;
-  }
-
-  function migrateLegacyData() {
-    const data = makeDefaultAppData();
-    try { const saved = JSON.parse(localStorage.getItem(STATE_KEY) || "{}"); if (saved && typeof saved === "object") data.session = { ...data.session, ...saved }; } catch {}
-    try { const prof = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}"); if (prof?.rep) data.profile.rep = prof.rep; } catch {}
-    try { const hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || "{}"); if (hist && typeof hist === "object") data.history = hist; } catch {}
-    try { const lang = localStorage.getItem(LANG_KEY); if (lang === "en" || lang === "es") data.language = lang; } catch {}
-    try { const t = parseInt(localStorage.getItem("trainedAgentsWithCheck") || "0", 10); if (Number.isFinite(t)) data.trainedAgentsWithCheck = Math.max(0,t); } catch {}
-    return data;
-  }
-
-  function loadAppState() {
-    const tryParse = (k) => {
-      try {
-        const raw = localStorage.getItem(k);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== "object") return null;
-        if (parsed.schemaVersion !== APP_SCHEMA_VERSION || !parsed.data || typeof parsed.data !== "object") return null;
-        return {
-          schemaVersion: APP_SCHEMA_VERSION,
-          updatedAt: parsed.updatedAt || new Date().toISOString(),
-          data: normalizeAppData(parsed.data)
-        };
-      } catch { return null; }
-    };
-    const primary = tryParse(APP_STATE_KEY);
-    if (primary) return primary;
-    const backup = tryParse(APP_STATE_BACKUP_KEY);
-    if (backup) return backup;
-    return {
-      schemaVersion: APP_SCHEMA_VERSION,
-      updatedAt: new Date().toISOString(),
-      data: normalizeAppData(migrateLegacyData())
-    };
-  }
-
-  let appState = loadAppState();
-
-  function saveAppState() {
-    try {
-      const prev = localStorage.getItem(APP_STATE_KEY);
-      if (prev) localStorage.setItem(APP_STATE_BACKUP_KEY, prev);
-    } catch {}
-    appState.schemaVersion = APP_SCHEMA_VERSION;
-    appState.updatedAt = new Date().toISOString();
-    try { localStorage.setItem(APP_STATE_KEY, JSON.stringify(appState)); } catch {}
-  }
-
   // ---------- History ----------
+  function resolveHistoryUid() {
+    return (state?.uid || window.firebaseAuth?.currentUser?.uid || "").trim();
+  }
+
+  function historyStorageKey(uid = resolveHistoryUid()) {
+    return uid ? `${HISTORY_KEY_PREFIX}:${uid}` : HISTORY_KEY;
+  }
+
   function loadHistory() {
-    const h = appState?.data?.history;
-    return (h && typeof h === "object") ? h : {};
+    try {
+      const h = JSON.parse(localStorage.getItem(historyStorageKey()) || "{}");
+      return (h && typeof h === "object") ? h : {};
+    } catch {
+      return {};
+    }
   }
   function saveHistory(hist) {
-    if (!appState.data) appState.data = makeDefaultAppData();
-    appState.data.history = hist || {};
-    saveAppState();
+    try { localStorage.setItem(historyStorageKey(), JSON.stringify(hist)); } catch {}
   }
   function upsertDayInHistory(dayISO, payload) {
     const hist = loadHistory();
@@ -1702,19 +2448,57 @@
     return recordsInRange(start, end);
   }
 
+  function historyForAgent(agentUid) {
+    if (!agentUid || agentUid === state.uid) return loadHistory();
+    return managerState.records[agentUid] || {};
+  }
+
+  function recordsInRangeForAgent(agentUid, startDate, endDate) {
+    const hist = historyForAgent(agentUid);
+    const out = [];
+    const startISO = isoDateLocal(startDate);
+    const endISO = isoDateLocal(endDate);
+    Object.keys(hist).forEach((iso) => { if (iso >= startISO && iso <= endISO) out.push(hist[iso]); });
+    out.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    return out;
+  }
+
+  function recordsInMonthForAgent(agentUid, year, monthIdx) {
+    const start = new Date(year, monthIdx, 1);
+    const end = new Date(year, monthIdx + 1, 0);
+    return recordsInRangeForAgent(agentUid, start, end);
+  }
+
   // ---------- Load session state ----------
-  if (!appState.data) appState.data = makeDefaultAppData();
-  let currentLang = appState.data.language === "en" ? "en" : "es";
-  const savedSession = appState.data.session || {};
+  const saved = JSON.parse(localStorage.getItem(STATE_KEY) || "{}");
+  const savedProfile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+  const savedLang = localStorage.getItem(LANG_KEY) || localStorage.getItem(LEGACY_LANG_KEY);
+  let currentLang = (savedLang === "en" || savedLang === "es") ? savedLang : "es";
   const state = {
-    active: !!savedSession.active,
-    date: savedSession.date || isoDateLocal(),
-    rep: savedSession.rep || appState.data.profile?.rep || "",
-    store: savedSession.store || "",
-    values: savedSession.values || {},
-    sessionStart: savedSession.sessionStart || null,
+    active: !!saved.active,
+    date: saved.date || isoDateLocal(),
+    rep: saved.rep || savedProfile.rep || "",
+    store: saved.store || "",
+    values: saved.values || {},
+    sessionStart: saved.sessionStart || null,
+    teamId: (typeof saved.teamId === "string" ? saved.teamId : "") || "",
+    role: saved.role || "agent",
+    uid: "",
   };
   metrics.forEach(k => { if (typeof state.values[k] !== "number") state.values[k] = 0; });
+  const managerState = {
+    selectedAgentUid: "",
+    selectedAgentName: "",
+    selectedAgentEmail: "",
+    addDayTargetUid: "",
+    addDayTargetName: "",
+    list: [],
+    search: "",
+    monthCache: new Map(),
+    records: {},
+    calCursor: (() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })(),
+  };
+
 
   // ---------- DOM ----------
   const todayDateEl = document.getElementById("today_date");
@@ -1723,18 +2507,19 @@
   const startHint = document.getElementById("start_hint");
   const startDayBtn = document.getElementById("start_day");
   const finishDayBtn = document.getElementById("finish_day");
-  const profileBtn = document.getElementById("profile_btn");
   const langToggleBtn = document.getElementById("lang_toggle");
+  const authLangToggleBtn = document.getElementById("auth_lang_toggle");
   const modalLanguage = document.getElementById("modal_language");
   const langEsBtn = document.getElementById("lang_es");
   const langEnBtn = document.getElementById("lang_en");
 
   // Tabs
   const tabEls = Array.from(document.querySelectorAll(".tab"));
-  const unavailableModal = document.getElementById("modal_unavailable");
   const tabCounter = document.getElementById("tab_counter");
   const tabCalendar = document.getElementById("tab_calendar");
   const tabSummary = document.getElementById("tab_summary");
+  const tabAgents = document.getElementById("tab_agents");
+  const tabAgentsLabel = document.getElementById("tab_agents_label");
 
   // Counter
   const startScreen = document.getElementById("start_screen");
@@ -1751,6 +2536,17 @@
   const calGrid = document.getElementById("cal_grid");
   const weekStatsEl = document.getElementById("week_stats");
   const monthStatsEl = document.getElementById("month_stats");
+  const mgrCalTitle = document.getElementById("mgr_cal_title");
+  const mgrCalGrid = document.getElementById("mgr_cal_grid");
+  const mgrWeekStatsEl = document.getElementById("mgr_week_stats");
+  const mgrMonthStatsEl = document.getElementById("mgr_month_stats");
+  const agentsListEl = document.getElementById("agents_list");
+  const agentsErrorEl = document.getElementById("agents_error");
+  const kpiAgentsActiveEl = document.getElementById("kpi_agents_active");
+  const kpiTeamWeekEl = document.getElementById("kpi_team_week");
+  const kpiTeamMonthEl = document.getElementById("kpi_team_month");
+  const managerAgentDetailEl = document.getElementById("manager_agent_detail");
+  const managerRemoveAgentBtn = document.getElementById("manager_remove_agent_btn");
 
   // Summary
   const sumWrap = document.getElementById("sum_wrap");
@@ -1759,6 +2555,8 @@
   const modalStart = document.getElementById("modal_start");
   const modalProfile = document.getElementById("modal_profile");
   const modalReport = document.getElementById("modal_report");
+  const modalAddAgent = document.getElementById("modal_add_agent");
+  const modalAddDay = document.getElementById("modal_add_day");
   const startStore = document.getElementById("start_store");
   const startProfileName = document.getElementById("start_profile_name");
   const profileNameInput = document.getElementById("profile_name");
@@ -1770,6 +2568,7 @@
 
   // Report actions
   const reportHint = document.getElementById("report_hint");
+  const reportSaveStatus = document.getElementById("report_save_status");
   const reportDayRating = document.getElementById("report_day_rating");
   const endBtn = document.getElementById("end_btn");
   const copyBtn = document.getElementById("copy_btn");
@@ -1785,6 +2584,7 @@
   const dayModalReport = document.getElementById("day_modal_report");
   const dayCopyBtn = document.getElementById("day_copy");
   const dayShareBtn = document.getElementById("day_share");
+  const dayAddMissingBtn = document.getElementById("day_add_missing");
   const dayEditBtn = document.getElementById("day_edit");
   const dayDeleteBtn = document.getElementById("day_delete");
   const daySaveBtn = document.getElementById("day_save");
@@ -1798,14 +2598,58 @@
   const modalRatingHelp = document.getElementById("modal_rating_help");
 
   // ---------- Save session ----------
-  function saveStateNow() {
-    if (!appState.data) appState.data = makeDefaultAppData();
-    appState.data.session = { ...state, values: { ...state.values } };
-    appState.data.language = currentLang;
-    appState.data.profile = { ...(appState.data.profile || {}), rep: state.rep || "" };
-    saveAppState();
-  }
+  function saveStateNow() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
   function saveState() { try { saveStateNow(); } catch {} }
+
+  function sanitizeTeamId(raw) {
+    return String(raw || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  }
+
+  function setTeamId(teamId) {
+    const clean = sanitizeTeamId(teamId);
+    state.teamId = clean;
+    if (clean) {
+      try { localStorage.setItem(TEAM_KEY, clean); } catch {}
+    } else {
+      try { localStorage.removeItem(TEAM_KEY); } catch {}
+    }
+    saveState();
+    console.log("TEAM resolved", clean || "(none)");
+    return clean;
+  }
+
+  async function hydrateCacheFromCloudForVisibleRanges() {
+    const uid = window.firebaseAuth?.currentUser?.uid;
+    if (!uid || !state.teamId || typeof window.cloudGetDaysInRange !== "function") return;
+
+    const now = new Date();
+    const monthStartISO = isoDateLocal(new Date(calCursor.y, calCursor.m, 1));
+    const monthEndISO = isoDateLocal(new Date(calCursor.y, calCursor.m + 1, 0));
+    const weekStartISO = isoDateLocal(startOfWeekMon(now));
+    const weekEndISO = isoDateLocal(endOfWeekSun(now));
+
+    try {
+      const [monthDocs, weekDocs] = await Promise.all([
+        window.cloudGetDaysInRange(state.teamId, uid, monthStartISO, monthEndISO),
+        window.cloudGetDaysInRange(state.teamId, uid, weekStartISO, weekEndISO),
+      ]);
+      const hist = loadHistory();
+      let changed = 0;
+      [...monthDocs, ...weekDocs].forEach((rec) => {
+        if (!rec?.date) return;
+        const prev = JSON.stringify(hist[rec.date] || null);
+        const next = JSON.stringify(rec);
+        if (prev !== next) {
+          hist[rec.date] = rec;
+          changed += 1;
+        }
+      });
+      if (changed > 0) saveHistory(hist);
+      console.log(`Hydrated ${monthDocs.length + weekDocs.length} docs`);
+    } catch (err) {
+      console.warn("Firestore hydrate failed, using local cache", err);
+    }
+  }
 
   window.addEventListener("pagehide", () => { try { saveStateNow(); } catch {} });
   document.addEventListener("visibilitychange", () => {
@@ -1816,10 +2660,14 @@
     return i18n[currentLang][key] || i18n.es[key] || key;
   }
 
+  function shortLangLabel() {
+    return currentLang === "en" ? "EN" : "ES";
+  }
+
   function saveProfile(rep) {
-    if (!appState.data) appState.data = makeDefaultAppData();
-    appState.data.profile = { ...(appState.data.profile || {}), rep: rep || "" };
-    saveAppState();
+    try {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ rep }));
+    } catch {}
   }
 
   function applyTranslations() {
@@ -1827,14 +2675,30 @@
     document.getElementById("tab_counter_label").textContent = t("tabCounter");
     document.getElementById("tab_calendar_label").textContent = t("tabCalendar");
     document.getElementById("tab_summary_label").textContent = t("tabSummary");
-    document.getElementById("tab_summary_label").classList.toggle("disabled", !features.progressEnabled);
-    document.getElementById("tab_summary_label").setAttribute("aria-disabled", (!features.progressEnabled).toString());
+    document.getElementById("tab_agents_label").textContent = t("tabAgents");
     document.getElementById("today_title").textContent = t("appTitle");
+    const loginTitleEl = document.getElementById("auth_login_title");
+    if (loginTitleEl) loginTitleEl.textContent = t("loginTitle");
+    const authEmailEl = document.getElementById("authEmail");
+    const authPassEl = document.getElementById("authPass");
+    if (authEmailEl) authEmailEl.placeholder = t("loginEmailPlaceholder");
+    if (authPassEl) authPassEl.placeholder = t("loginPassPlaceholder");
+    const authSignupBtn = document.getElementById("authSignupOpenBtn");
+    if (authSignupBtn) authSignupBtn.textContent = t("signupBtn");
+    const authLoginBtnText = document.getElementById("authLoginBtnText");
+    if (authLoginBtnText && !document.getElementById("authLoginBtn")?.classList.contains("loading")) authLoginBtnText.textContent = t("loginBtn");
+    const logoutBtn = document.getElementById("logout_btn");
+    if (logoutBtn) logoutBtn.textContent = t("logoutBtn");
+    const signupTitleEl = document.getElementById("signup_title");
+    if (signupTitleEl) signupTitleEl.textContent = t("signupTitle");
+    const signupCancelBtn = document.getElementById("signup_cancel_btn");
+    if (signupCancelBtn) signupCancelBtn.textContent = t("cancel");
+    const signupCreateBtn = document.getElementById("signupCreateBtn");
+    if (signupCreateBtn && !signupCreateBtn.disabled) signupCreateBtn.textContent = t("signupBtn");
     startHeadline.textContent = t("startHeadline");
     startIntro.textContent = t("startIntro");
     startHint.textContent = t("startHint");
     startDayBtn.textContent = t("startDay");
-    profileBtn.textContent = `${state.rep || t("profileBtn")} ⌄`;
     finishDayBtn.textContent = t("finishDay");
     document.getElementById("start_modal_title").textContent = t("startModalTitle");
     document.getElementById("start_modal_intro").textContent = t("startModalIntro");
@@ -1845,10 +2709,10 @@
     document.getElementById("profile_name_label").textContent = t("nameLabel");
     document.getElementById("profile_save").textContent = t("profileSave");
     document.getElementById("profile_reset").textContent = t("profileReset");
-    document.getElementById("profile_reset").style.display = APP_MODE === "agent" ? "none" : "";
-    document.getElementById("unavailable_title").textContent = t("unavailableTitle");
-    document.getElementById("unavailable_msg").textContent = t("unavailableMsg");
-    langToggleBtn.textContent = t("languageBtn");
+    langToggleBtn.textContent = shortLangLabel();
+    if (authLangToggleBtn) authLangToggleBtn.textContent = shortLangLabel();
+    langToggleBtn.title = t("languageBtn");
+    if (authLangToggleBtn) authLangToggleBtn.title = t("languageBtn");
     document.getElementById("lang_modal_title").textContent = t("languageModalTitle");
     document.getElementById("lang_modal_intro").textContent = t("languageModalIntro");
     langEsBtn.textContent = t("languageSpanish");
@@ -1862,6 +2726,48 @@
     document.getElementById("qr_title").textContent = t("qrTitle");
     document.getElementById("qr_note").textContent = t("qrNote");
     document.getElementById("report_hint").textContent = t("reportHint");
+    copyBtn.textContent = t("copyBtn");
+    shareBtn.textContent = t("shareBtn");
+
+    const agentsAddBtnEl = document.getElementById("agents_add_btn");
+    if (agentsAddBtnEl) agentsAddBtnEl.innerHTML = `<span class="plus">+</span>${t("addAgent")}`;
+    const agentsSectionTitleEl = document.getElementById("agents_section_title");
+    if (agentsSectionTitleEl) agentsSectionTitleEl.textContent = t("agentsTitle");
+    const agentsKpiActiveLabelEl = document.getElementById("agents_kpi_active_label");
+    if (agentsKpiActiveLabelEl) agentsKpiActiveLabelEl.textContent = t("activeAgentsLabel");
+    const agentsKpiWeekLabelEl = document.getElementById("agents_kpi_week_label");
+    if (agentsKpiWeekLabelEl) agentsKpiWeekLabelEl.textContent = t("teamWeekSalesLabel");
+    const agentsKpiMonthLabelEl = document.getElementById("agents_kpi_month_label");
+    if (agentsKpiMonthLabelEl) agentsKpiMonthLabelEl.textContent = t("teamMonthSalesLabel");
+    const addAgentTitleEl = document.getElementById("add_agent_title");
+    if (addAgentTitleEl) addAgentTitleEl.textContent = t("addAgent");
+    const addAgentEmailLabelEl = document.getElementById("add_agent_email_label");
+    if (addAgentEmailLabelEl) addAgentEmailLabelEl.textContent = t("addAgentByEmail");
+    const addAgentCancelEl = document.getElementById("add_agent_cancel");
+    if (addAgentCancelEl) addAgentCancelEl.textContent = t("cancel");
+    const addAgentConfirmEl = document.getElementById("add_agent_confirm");
+    if (addAgentConfirmEl) addAgentConfirmEl.textContent = t("assignAgentBtn");
+    const addDayTitleEl = document.getElementById("add_day_title");
+    if (addDayTitleEl) addDayTitleEl.textContent = t("addDayTitle");
+    const addDayDateLabelEl = document.getElementById("add_day_date_label");
+    if (addDayDateLabelEl) addDayDateLabelEl.textContent = t("date");
+    const addDayRepLabelEl = document.getElementById("add_day_rep_label");
+    if (addDayRepLabelEl) addDayRepLabelEl.textContent = t("nameLabel");
+    const addDayStoreLabelEl = document.getElementById("add_day_store_label");
+    if (addDayStoreLabelEl) addDayStoreLabelEl.textContent = t("storeLabel");
+    const addDayStartLabelEl = document.getElementById("add_day_start_label");
+    if (addDayStartLabelEl) addDayStartLabelEl.textContent = `${t("startLbl")} ${t("optionalTime")}`;
+    const addDayEndLabelEl = document.getElementById("add_day_end_label");
+    if (addDayEndLabelEl) addDayEndLabelEl.textContent = `${t("endLbl")} ${t("optionalTime")}`;
+    const addDayCancelEl = document.getElementById("add_day_cancel");
+    if (addDayCancelEl) addDayCancelEl.textContent = t("cancel");
+    const addDayConfirmEl = document.getElementById("add_day_confirm");
+    if (addDayConfirmEl) addDayConfirmEl.textContent = t("addDaySave");
+    endBtn.textContent = t("endDayNow");
+    dayCopyBtn.textContent = t("copyBtn");
+    dayShareBtn.textContent = t("shareBtn");
+    if (dayAddMissingBtn) dayAddMissingBtn.textContent = t("addDay");
+    if (managerRemoveAgentBtn) managerRemoveAgentBtn.textContent = t("removeAgent");
     document.getElementById("rating_help_body").innerHTML = `
       <div style="font-weight:700; margin-bottom:8px;">${t("quickCriteria")}</div>
       <ul style="margin:0 0 10px 18px; padding:0;">
@@ -1881,11 +2787,12 @@
 
   function setLanguage(lang) {
     currentLang = lang === "en" ? "en" : "es";
-    saveStateNow();
+    try { localStorage.setItem(LANG_KEY, currentLang); } catch {}
+    try { localStorage.removeItem(LEGACY_LANG_KEY); } catch {}
     closeModal(modalLanguage);
     applyTranslations();
     renderCalendarStats();
-    if (features.progressEnabled) renderProgress(); else setActiveTab("counter");
+    renderProgress();
   }
 
   // ---------- UI ----------
@@ -1976,8 +2883,9 @@
   clickOutsideToClose(modalStart, true);
   clickOutsideToClose(modalProfile, true);
   clickOutsideToClose(modalReport, false);
+  clickOutsideToClose(modalAddAgent, true);
+  clickOutsideToClose(modalAddDay, true);
   clickOutsideToClose(modalDay, true);
-  clickOutsideToClose(unavailableModal, true);
   clickOutsideToClose(modalRatingHelp, true);
   dayX.addEventListener("click", () => closeModal(modalDay));
   document.getElementById("rating_help_x").addEventListener("click", () => closeModal(modalRatingHelp));
@@ -1998,35 +2906,56 @@
     startTimerLoop();
   }
 
-  function buildReport(endTs) {
-    const S = state.values.S, Z = state.values.Z, CC = state.values.CC, C = state.values.C, X = state.values.X;
+  function buildReportText(dayData) {
+    const values = dayData?.values || {};
+    const S = Number(values.S || 0);
+    const Z = Number(values.Z || 0);
+    const CC = Number(values.CC || 0);
+    const C = Number(values.C || 0);
+    const X = Number(values.X || 0);
 
     const aggr = (S >= AGGR_MIN_STOPS && S > 0) ? (Z / S) : null;
-    const close = (Z > 0) ? (X / Z) : 0;
-
-    const startTs = state.sessionStart || endTs;
-    const duration = fmtDuration(endTs - startTs);
+    const close = (Z > 0) ? (X / Z) : null;
 
     const aggrLine = (aggr !== null)
       ? `% Aggressiveness (Z/S): ${fmtPct(aggr)}`
       : `% Aggressiveness (Z/S): — (min ${AGGR_MIN_STOPS} S)`;
 
+    const closeLine = (close !== null)
+      ? `% Close (X/Z): ${fmtPct(close)}`
+      : `% Close (X/Z): —`;
+
+    const hasTime = Number(dayData?.startTs || 0) > 0 || Number(dayData?.endTs || 0) > 0 || Number(dayData?.durationMs || 0) > 0;
+    const timeLines = hasTime
+      ? [`Start: ${fmtTime(dayData?.startTs)}`, `End: ${fmtTime(dayData?.endTs)}`, `Duration: ${fmtDuration(dayData?.durationMs || 0)}`, ``]
+      : [];
+
     return [
-      `Name: ${state.rep || "-"}`,
-      `Store: ${state.store || "-"}`,
-      `Date: ${prettyDateFromISO(state.date)}`,
+      `Name: ${dayData?.rep || "-"}`,
+      `Store: ${dayData?.store || "-"}`,
+      `Date: ${prettyDateFromISO(dayData?.date || "-")}`,
       ``,
-      `Start: ${fmtTime(startTs)}`,
-      `End: ${fmtTime(endTs)}`,
-      `Duration: ${duration}`,
-      ``,
+      ...timeLines,
       `S: ${S} | Z: ${Z} | CC: ${CC} | C: ${C} | X: ${X}`,
       aggrLine,
-      `% Close (X/Z): ${fmtPct(close)}`
+      closeLine
     ].join("\n");
   }
 
-  function persistCompletedDay(endTs, reportText) {
+  function buildReport(endTs) {
+    const startTs = state.sessionStart || endTs;
+    return buildReportText({
+      date: state.date,
+      rep: state.rep || "",
+      store: state.store || "",
+      startTs,
+      endTs,
+      durationMs: Math.max(0, endTs - startTs),
+      values: { ...state.values },
+    });
+  }
+
+  async function persistCompletedDay(endTs, reportText) {
     const startTs = state.sessionStart || endTs;
     const ratingInfo = classifyDay(state.values);
     const payload = {
@@ -2045,6 +2974,41 @@
     const hist = loadHistory();
     hist[state.date] = payload;
     saveHistory(hist);
+
+    const uid = window.firebaseAuth?.currentUser?.uid;
+    if (!uid) {
+      console.warn("Firestore day save skipped: missing uid");
+      return { localSaved: true, cloudSaved: false, reason: "missing-uid" };
+    }
+
+    if (!state.teamId && typeof window.resolveTeamIdForUser === "function") {
+      try {
+        const resolvedTeamId = await window.resolveTeamIdForUser(uid);
+        if (resolvedTeamId) setTeamId(resolvedTeamId);
+      } catch (e) {
+        console.warn("Unable to resolve teamId before day write", e);
+      }
+    }
+
+    if (!state.teamId) {
+      console.warn("Firestore day save skipped: missing teamId", { uid, teamId: state.teamId });
+      return { localSaved: true, cloudSaved: false, reason: "missing-team" };
+    }
+
+    try {
+      if (typeof window.ensureTeamMembership === "function") {
+        await window.ensureTeamMembership(state.teamId, uid);
+      }
+      const res = await window.cloudUpsertDay(state.teamId, uid, state.date, payload);
+      console.log("Saved day:", state.date, payload);
+      console.log("Saved to Firestore", res?.path || "-");
+      return { localSaved: true, cloudSaved: true, path: res?.path || "" };
+    } catch (err) {
+      console.error("Firestore save failed", err);
+      const reason = `${err?.code || ""} ${err?.message || err}`.trim();
+      console.error("Firestore save failed (actionable): check Firestore Rules/Auth/Network.", reason);
+      return { localSaved: true, cloudSaved: false, error: err };
+    }
   }
 
   function finalizeAndReset() {
@@ -2062,15 +3026,17 @@
     closeModal(modalReport);
     showStartScreen();
     renderCalendar();
-    if (features.progressEnabled) renderProgress();
+    renderProgress();
   }
 
   function setReportMode(mode) {
     const isPhone = mode === "phone";
+    console.log("setReportMode", mode, { isPhone });
     copyBtn.style.display = isPhone ? "" : "none";
     shareBtn.style.display = isPhone ? "" : "none";
     reportHint.style.display = isPhone ? "" : "none";
     endBtn.style.display = isPhone ? "none" : "";
+    if (reportSaveStatus && !isPhone) reportSaveStatus.textContent = "";
   }
 
   // ---------- QR ----------
@@ -2106,45 +3072,36 @@
   // ---------- Day details modal logic ----------
   function buildFullReportFromRecord(rec){
     if (!rec) return "No data for this day.";
-    if (rec.reportText) return rec.reportText;
-
-    const S = rec.values?.S ?? 0;
-    const Z = rec.values?.Z ?? 0;
-    const CC = rec.values?.CC ?? 0;
-    const C = rec.values?.C ?? 0;
-    const X = rec.values?.X ?? 0;
-
-    const aggr = (S >= AGGR_MIN_STOPS && S > 0) ? (Z / S) : null;
-    const close = (Z > 0) ? (X / Z) : 0;
-
-    const aggrLine = (aggr !== null)
-      ? `% Aggressiveness (Z/S): ${fmtPct(aggr)}`
-      : `% Aggressiveness (Z/S): — (min ${AGGR_MIN_STOPS} S)`;
-
-    return [
-      `Name: ${rec.rep || "-"}`,
-      `Store: ${rec.store || "-"}`,
-      `Date: ${prettyDateFromISO(rec.date || "-")}`,
-      ``,
-      `Start: ${fmtTime(rec.startTs)}`,
-      `End: ${fmtTime(rec.endTs)}`,
-      `Duration: ${fmtDuration(rec.durationMs || 0)}`,
-      ``,
-      `S: ${S} | Z: ${Z} | CC: ${CC} | C: ${C} | X: ${X}`,
-      aggrLine,
-      `% Close (X/Z): ${fmtPct(close)}`
-    ].join("\n");
+    return buildReportText(rec);
   }
 
-  function openDayModal(iso){
-    const hist = loadHistory();
+  function openManagerAddDayModal({ dateISO = isoDateLocal(), agentUid = "", agentName = "" } = {}) {
+    const msg = document.getElementById("add_day_msg");
+    const modalBody = document.querySelector("#modal_add_day .modalBody");
+    managerState.addDayTargetUid = agentUid || managerState.selectedAgentUid || state.uid;
+    managerState.addDayTargetName = agentName || managerState.selectedAgentName || state.rep || "";
+    if (msg) msg.textContent = "";
+    if (modalBody) modalBody.scrollTop = 0;
+    document.getElementById("add_day_date").value = dateISO;
+    document.getElementById("add_day_rep").value = managerState.addDayTargetName || "";
+    document.getElementById("add_day_store").value = "";
+    document.getElementById("add_day_start").value = "";
+    document.getElementById("add_day_end").value = "";
+    ["s","z","cc","c","xv"].forEach((k) => { const el = document.getElementById(`add_day_${k}`); if (el) el.value = "0"; });
+    openModal(modalAddDay);
+  }
+
+  function openDayModal(iso, agentUid = state.uid){
+    const hist = historyForAgent(agentUid);
     const rec = hist[iso];
     activeDayISO = iso;
+    activeDayAgentUid = agentUid || state.uid;
 
     dayModalTitle.textContent = rec ? `${t("dayDetailsTitle")} • ${prettyDateFromISO(iso)}` : `${t("dayNoDataTitle")} • ${prettyDateFromISO(iso)}`;
     dayEditGrid.style.display = "none";
     daySaveBtn.style.display = "none";
     dayEditBtn.textContent = "Editar día";
+    const isReadOnly = agentUid !== state.uid;
 
     if (!rec){
       dayModalRating.innerHTML = "";
@@ -2158,6 +3115,7 @@
       dayModalReport.textContent = "—";
       dayCopyBtn.style.display = "none";
       dayShareBtn.style.display = "none";
+      if (dayAddMissingBtn) dayAddMissingBtn.style.display = state.role === "manager" ? "" : "none";
       dayEditBtn.style.display = "none";
       dayDeleteBtn.style.display = "none";
       openModal(modalDay);
@@ -2165,7 +3123,6 @@
     }
 
     const X = rec.values?.X ?? 0;
-    const money = (X * MONEY_PER_X);
     const ratingInfo = classifyDay(rec.values || {});
     const rating = rec.dayRating || ratingInfo.dayRating;
     const badge = rec.dayBadge ?? ratingInfo.dayBadge;
@@ -2185,16 +3142,16 @@
       </div>
     `).join("");
 
+    const hasTimeMeta = Number(rec.startTs || 0) > 0 || Number(rec.endTs || 0) > 0 || Number(rec.durationMs || 0) > 0;
+    const timeMetaLine = hasTimeMeta
+      ? `<div class="p">${t("startLbl")}: ${fmtTime(rec.startTs)} • ${t("endLbl")}: ${fmtTime(rec.endTs)} • ${t("durLbl")}: ${fmtDuration(rec.durationMs || 0)}</div>`
+      : "";
     dayModalMeta.innerHTML = `
       <div class="statHead">
         <div>
           <div class="h">${rec.rep || "—"} • ${rec.store || "—"}</div>
-          <div class="p">${t("startLbl")}: ${fmtTime(rec.startTs)} • ${t("endLbl")}: ${fmtTime(rec.endTs)} • ${t("durLbl")}: ${fmtDuration(rec.durationMs || 0)}</div>
+          ${timeMetaLine}
           <div class="p">${t("resultLbl")}: ${ratingLine(rating, badge)}</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-weight:1000; letter-spacing:.02em;">$${money}</div>
-          <div style="font-size:11px; opacity:.85; letter-spacing:.08em; font-weight:900; margin-top:2px;">EARNED</div>
         </div>
       </div>
     `;
@@ -2208,8 +3165,10 @@
     dayModalReport.textContent = buildFullReportFromRecord(rec);
     dayCopyBtn.style.display = "";
     dayShareBtn.style.display = "";
-    dayEditBtn.style.display = "";
-    dayDeleteBtn.style.display = "";
+    if (dayAddMissingBtn) dayAddMissingBtn.style.display = "none";
+    dayEditBtn.style.display = isReadOnly ? "none" : "";
+    dayDeleteBtn.style.display = (isReadOnly && state.role !== "manager") ? "none" : "";
+    if (isReadOnly) dayModalMeta.innerHTML += `<div class="p" style="margin-top:6px;">${t("readOnlyManager")}</div>`;
     openModal(modalDay);
   }
 
@@ -2237,6 +3196,16 @@
 
   dayCopyBtn.addEventListener("click", async () => { try { await copyOrShareText(dayModalReport.textContent, "copy"); } catch {} });
   dayShareBtn.addEventListener("click", async () => { try { await copyOrShareText(dayModalReport.textContent, "share"); } catch {} });
+  dayAddMissingBtn?.addEventListener("click", () => {
+    if (!activeDayISO || !activeDayAgentUid || state.role !== "manager") return;
+    closeModal(modalDay);
+    const isOwnDay = activeDayAgentUid === state.uid;
+    openManagerAddDayModal({
+      dateISO: activeDayISO,
+      agentUid: activeDayAgentUid,
+      agentName: isOwnDay ? (state.rep || "") : (managerState.selectedAgentName || ""),
+    });
+  });
 
   dayEditBtn.addEventListener("click", () => {
     const detailsPanel = document.getElementById("day_details_panel");
@@ -2253,8 +3222,8 @@
     }
   });
 
-  daySaveBtn.addEventListener("click", () => {
-    if (!activeDayISO) return;
+  daySaveBtn.addEventListener("click", async () => {
+    if (!activeDayISO || activeDayAgentUid !== state.uid) return;
     const hist = loadHistory();
     const rec = hist[activeDayISO];
     if (!rec) return;
@@ -2272,22 +3241,54 @@
     rec.dayRating = ratingInfo.dayRating;
     rec.dayBadge = ratingInfo.dayBadge;
     upsertDayInHistory(activeDayISO, rec);
+    const uid = window.firebaseAuth?.currentUser?.uid;
+    if (uid && state.teamId && typeof window.cloudUpsertDay === "function") {
+      try {
+        await window.cloudUpsertDay(state.teamId, uid, activeDayISO, rec);
+      } catch (err) {
+        console.warn("Firestore write failed, using local cache", err);
+      }
+    }
     renderCalendar();
     renderCalendarStats();
-    if (features.progressEnabled) renderProgress();
+    renderProgress();
     openDayModal(activeDayISO);
   });
 
-  dayDeleteBtn.addEventListener("click", () => {
-    if (!activeDayISO) return;
+  dayDeleteBtn.addEventListener("click", async () => {
+    if (!activeDayISO || !activeDayAgentUid) return;
+    const canDeleteOwn = activeDayAgentUid === state.uid;
+    const canDeleteAsManager = state.role === "manager";
+    if (!canDeleteOwn && !canDeleteAsManager) return;
     if (!confirm(`¿Borrar el día ${activeDayISO}?`)) return;
-    const hist = loadHistory();
-    delete hist[activeDayISO];
-    saveHistory(hist);
+
+    if (canDeleteOwn) {
+      const hist = loadHistory();
+      delete hist[activeDayISO];
+      saveHistory(hist);
+    } else {
+      managerState.records[activeDayAgentUid] = managerState.records[activeDayAgentUid] || {};
+      delete managerState.records[activeDayAgentUid][activeDayISO];
+      managerState.monthCache.delete(`${activeDayAgentUid}:${managerState.calCursor.y}-${managerState.calCursor.m}`);
+    }
+
+    if (state.teamId && typeof window.cloudDeleteDay === "function") {
+      try {
+        await window.cloudDeleteDay(state.teamId, activeDayAgentUid, activeDayISO);
+      } catch (err) {
+        console.warn("Firestore write failed, using local cache", err);
+      }
+    }
+
     closeModal(modalDay);
-    renderCalendar();
-    renderCalendarStats();
-    if (features.progressEnabled) renderProgress();
+    if (canDeleteOwn) {
+      renderCalendar();
+      renderCalendarStats();
+      renderProgress();
+    } else {
+      await renderManagerAgentCalendar();
+      await renderManagerAgentsList();
+    }
   });
 
   // ---------- Metrics interactions ----------
@@ -2326,32 +3327,288 @@
   window.addEventListener("blur", stopHold);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") stopHold(); });
 
+
+  async function loadManagerAgents() {
+    const managerUid = state.uid;
+    if (!state.teamId || !managerUid || state.role !== "manager" || typeof window.cloudListAssignedAgents !== "function") return;
+    try {
+      managerState.list = await window.cloudListAssignedAgents(state.teamId, managerUid);
+      console.log("agents list loaded", managerState.list.length);
+      renderManagerAgentsList();
+    } catch (err) {
+      agentsErrorEl.textContent = String(err?.message || err);
+    }
+  }
+
+  async function ensureManagerAgentMonth(agentUid, y, m) {
+    if (!agentUid || typeof window.cloudGetDaysInRange !== "function") return;
+    const key = `${agentUid}:${y}-${m}`;
+    if (managerState.monthCache.has(key)) return;
+    const startISO = isoDateLocal(new Date(y, m, 1));
+    const endISO = isoDateLocal(new Date(y, m + 1, 0));
+    const docs = await window.cloudGetDaysInRange(state.teamId, agentUid, startISO, endISO);
+    managerState.records[agentUid] = managerState.records[agentUid] || {};
+    docs.forEach((d) => { if (d?.date) managerState.records[agentUid][d.date] = d; });
+    managerState.monthCache.set(key, true);
+    console.log("agent month days fetched", { agentUid, startISO, endISO, count: docs.length });
+  }
+
+  async function renderManagerAgentsList() {
+    const q = (managerState.search || "").toLowerCase();
+    const filtered = managerState.list.filter((a) => (a.displayName || "").toLowerCase().includes(q) || (a.email || "").toLowerCase().includes(q) || (a.uid || "").toLowerCase().includes(q));
+
+    if (managerState.selectedAgentUid && !filtered.some((agent) => agent.uid === managerState.selectedAgentUid)) {
+      managerState.selectedAgentUid = "";
+      managerState.selectedAgentName = "";
+      managerState.selectedAgentEmail = "";
+      if (managerRemoveAgentBtn) managerRemoveAgentBtn.style.display = "none";
+      managerAgentDetailEl.style.display = "none";
+    }
+
+    agentsListEl.innerHTML = "";
+
+    const now = new Date();
+    let totalWeekX = 0;
+    let totalMonthX = 0;
+    const rowsData = [];
+
+    for (const agent of filtered) {
+      await ensureManagerAgentMonth(agent.uid, now.getFullYear(), now.getMonth());
+      const weekTotals = sumRecords(recordsInRangeForAgent(agent.uid, startOfWeekMon(now), endOfWeekSun(now)));
+      const monthTotals = sumRecords(recordsInMonthForAgent(agent.uid, now.getFullYear(), now.getMonth()));
+      const weekX = weekTotals.X || 0;
+      const monthX = monthTotals.X || 0;
+      totalWeekX += weekX;
+      totalMonthX += monthX;
+      rowsData.push({ agent, weekX, monthX });
+    }
+
+    if (kpiAgentsActiveEl) kpiAgentsActiveEl.textContent = String(filtered.length);
+    if (kpiTeamWeekEl) kpiTeamWeekEl.textContent = String(totalWeekX);
+    if (kpiTeamMonthEl) kpiTeamMonthEl.textContent = String(totalMonthX);
+
+    if (!filtered.length) {
+      agentsListEl.innerHTML = `<div class="statCard">${t("agentsEmpty")}</div>`;
+      return;
+    }
+
+    rowsData.sort((a,b) => b.monthX - a.monthX);
+    for (const rowData of rowsData) {
+      const agent = rowData.agent;
+      const row = document.createElement("div");
+      const selected = managerState.selectedAgentUid === agent.uid;
+      row.className = `managerAgentCard ${selected ? "active" : ""}`;
+      row.setAttribute("role", "button");
+      row.setAttribute("tabindex", "0");
+      row.setAttribute("aria-expanded", selected ? "true" : "false");
+      row.innerHTML = `
+        <div class="managerAgentName">${agent.displayName || agent.email || agent.uid}</div>
+        <div class="managerAgentEmail">${agent.email || ""}</div>
+        <div class="managerAgentMetrics">
+          <div>
+            <div class="managerMetricLabel">${t("weekXLabel")}</div>
+            <div class="managerMetricValue ${rowData.weekX > 10 ? "highlight" : ""}">${rowData.weekX}</div>
+          </div>
+          <div>
+            <div class="managerMetricLabel">${t("monthXLabel")}</div>
+            <div class="managerMetricValue">${rowData.monthX}</div>
+          </div>
+          <div class="managerMetricLink">${selected ? t("hideDetails") : t("viewDetails")}</div>
+        </div>`;
+
+      const toggleCard = async () => {
+        const shouldCollapse = managerState.selectedAgentUid === agent.uid;
+        if (shouldCollapse) {
+          managerState.selectedAgentUid = "";
+          managerState.selectedAgentName = "";
+          managerState.selectedAgentEmail = "";
+          managerAgentDetailEl.style.display = "none";
+          if (managerRemoveAgentBtn) managerRemoveAgentBtn.style.display = "none";
+          await renderManagerAgentsList();
+          return;
+        }
+
+        managerState.selectedAgentUid = agent.uid;
+        managerState.selectedAgentName = agent.displayName || agent.email || agent.uid;
+        managerState.selectedAgentEmail = agent.email || "";
+        managerState.addDayTargetUid = agent.uid;
+        managerState.addDayTargetName = managerState.selectedAgentName;
+        if (managerRemoveAgentBtn) managerRemoveAgentBtn.style.display = "";
+        await renderManagerAgentsList();
+      };
+
+      row.addEventListener("click", async (ev) => {
+        if (ev.target.closest("#manager_agent_detail")) return;
+        await toggleCard();
+      });
+      row.addEventListener("keydown", async (ev) => {
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+        ev.preventDefault();
+        await toggleCard();
+      });
+
+      agentsListEl.appendChild(row);
+
+      if (selected) {
+        row.appendChild(managerAgentDetailEl);
+        managerAgentDetailEl.style.display = "";
+        await renderManagerAgentCalendar();
+      }
+    }
+  }
+
+  async function renderManagerAgentCalendar() {
+    if (!managerState.selectedAgentUid) return;
+    await ensureManagerAgentMonth(managerState.selectedAgentUid, managerState.calCursor.y, managerState.calCursor.m);
+    renderCalendarCore({
+      y: managerState.calCursor.y,
+      m: managerState.calCursor.m,
+      titleEl: mgrCalTitle,
+      gridEl: mgrCalGrid,
+      selectedISO: selectedDayISO,
+      agentUid: managerState.selectedAgentUid,
+      onClick: (iso) => { selectedDayISO = iso; openDayModal(iso, managerState.selectedAgentUid); renderManagerAgentCalendar(); },
+    });
+    const now = new Date();
+    const weekTotals = sumRecords(recordsInRangeForAgent(managerState.selectedAgentUid, startOfWeekMon(now), endOfWeekSun(now)));
+    const monthTotals = sumRecords(recordsInMonthForAgent(managerState.selectedAgentUid, managerState.calCursor.y, managerState.calCursor.m));
+    renderCompactStatCard(mgrWeekStatsEl, t("weekStatsTitle"), weekTotals);
+    renderCompactStatCard(mgrMonthStatsEl, t("monthStatsTitle"), monthTotals);
+  }
+
+  function renderManagerAgentsTab() {
+    if (state.role !== "manager") return;
+    renderManagerAgentsList();
+  }
+
   // ---------- Tabs logic ----------
   function setActiveTab(tabName) {
-    if (tabName === "summary" && !features.progressEnabled) {
-      tabName = "counter";
-    }
-    tabEls.forEach(t => t.classList.toggle("active", t.dataset.tab === tabName));
-    tabCounter.style.display = (tabName === "counter") ? "" : "none";
-    tabCalendar.style.display = (tabName === "calendar") ? "" : "none";
-    tabSummary.style.display = (tabName === "summary" && features.progressEnabled) ? "" : "none";
-    if (tabName === "calendar") renderCalendar();
-    if (tabName === "summary" && features.progressEnabled) renderProgress();
+    const nextTab = (tabName === "agents" && state.role !== "manager") ? "counter" : tabName;
+    tabEls.forEach(t => {
+      const tabValue = t.dataset.tab;
+      const canShow = (tabValue !== "agents") || state.role === "manager";
+      t.style.display = canShow ? "" : "none";
+      t.classList.toggle("active", tabValue === nextTab);
+    });
+    tabCounter.style.display = (nextTab === "counter") ? "" : "none";
+    tabCalendar.style.display = (nextTab === "calendar") ? "" : "none";
+    tabSummary.style.display = (nextTab === "summary") ? "" : "none";
+    if (tabAgents) tabAgents.style.display = (nextTab === "agents" && state.role === "manager") ? "" : "none";
+    if (nextTab === "calendar") renderCalendar();
+    if (nextTab === "summary") renderProgress();
+    if (nextTab === "agents") renderManagerAgentsTab();
   }
+
+  window.setActiveTab = setActiveTab;
+  window.loadManagerAgents = loadManagerAgents;
 
   document.getElementById("tabs").addEventListener("click", (e) => {
     const t = e.target.closest(".tab");
     if (!t) return;
-    if (t.dataset.tab === "summary" && !features.progressEnabled) {
-      openModal(unavailableModal);
-      return;
-    }
     setActiveTab(t.dataset.tab);
   });
+
+
+  document.getElementById("mgr_cal_prev")?.addEventListener("click", async () => {
+    managerState.calCursor.m -= 1;
+    if (managerState.calCursor.m < 0) { managerState.calCursor.m = 11; managerState.calCursor.y -= 1; }
+    await renderManagerAgentCalendar();
+  });
+  document.getElementById("mgr_cal_next")?.addEventListener("click", async () => {
+    managerState.calCursor.m += 1;
+    if (managerState.calCursor.m > 11) { managerState.calCursor.m = 0; managerState.calCursor.y += 1; }
+    await renderManagerAgentCalendar();
+  });
+  async function removeSelectedManagerAgent() {
+    const agentUid = managerState.selectedAgentUid;
+    if (!agentUid) return;
+    if (!confirm(t("removeAgentConfirm"))) return;
+    try {
+      await window.cloudRemoveAssignedAgent(state.teamId, state.uid, agentUid);
+      managerState.list = managerState.list.filter((a) => a.uid !== agentUid);
+      delete managerState.records[agentUid];
+      managerState.monthCache = new Map(Array.from(managerState.monthCache.entries()).filter(([k]) => !k.startsWith(`${agentUid}:`)));
+      managerState.selectedAgentUid = "";
+      managerState.selectedAgentName = "";
+      managerState.selectedAgentEmail = "";
+      managerAgentDetailEl.style.display = "none";
+      if (managerRemoveAgentBtn) managerRemoveAgentBtn.style.display = "none";
+      agentsErrorEl.textContent = t("removeAgentSaved");
+      await renderManagerAgentsList();
+    } catch (err) {
+      agentsErrorEl.textContent = `${t("removeAgentError")} ${String(err?.message || err)}`;
+    }
+  }
+
+  managerRemoveAgentBtn?.addEventListener("click", removeSelectedManagerAgent);
+
+  document.getElementById("agents_add_btn")?.addEventListener("click", () => openModal(modalAddAgent));
+  document.getElementById("add_agent_x")?.addEventListener("click", () => closeModal(modalAddAgent));
+  document.getElementById("add_agent_cancel")?.addEventListener("click", () => closeModal(modalAddAgent));
+  document.getElementById("add_agent_confirm")?.addEventListener("click", async () => {
+    const email = (document.getElementById("add_agent_email")?.value || "").trim().toLowerCase();
+    const msg = document.getElementById("add_agent_msg");
+    if (!email) { if (msg) msg.textContent = t("addAgentError"); return; }
+    try {
+      const result = await window.cloudAssignAgentToManagerByEmail(state.teamId, state.uid, email);
+      if (msg) msg.textContent = result?.alreadyAssigned ? t("agentAlreadyAssigned") : t("addAgentSaved");
+      await loadManagerAgents();
+    } catch (e) {
+      if (msg) msg.textContent = `${t("addAgentError")} ${e?.message || e}`;
+    }
+  });
+
+  document.getElementById("add_day_x")?.addEventListener("click", () => closeModal(modalAddDay));
+  document.getElementById("add_day_cancel")?.addEventListener("click", () => closeModal(modalAddDay));
+  document.getElementById("add_day_confirm")?.addEventListener("click", async () => {
+    const msg = document.getElementById("add_day_msg");
+    const agentUid = managerState.addDayTargetUid || managerState.selectedAgentUid;
+    if (!agentUid) { if (msg) msg.textContent = t("addDayNeedAgent"); return; }
+    const date = (document.getElementById("add_day_date")?.value || "").trim();
+    if (!date) { if (msg) msg.textContent = t("addAgentError"); return; }
+    const rep = (document.getElementById("add_day_rep")?.value || "").trim() || managerState.addDayTargetName || managerState.selectedAgentName || state.rep || "";
+    const store = (document.getElementById("add_day_store")?.value || "").trim();
+    const startT = (document.getElementById("add_day_start")?.value || "").trim();
+    const endT = (document.getElementById("add_day_end")?.value || "").trim();
+    const n = (id) => Math.max(0, parseInt(document.getElementById(id)?.value || 0, 10) || 0);
+    const values = { S: n("add_day_s"), Z: n("add_day_z"), CC: n("add_day_cc"), C: n("add_day_c"), X: n("add_day_xv") };
+    const startTs = toTsFromDateAndTime(date, startT);
+    const endTs = toTsFromDateAndTime(date, endT);
+    const durationMs = (startTs && endTs && endTs >= startTs) ? (endTs - startTs) : 0;
+    const ratingInfo = classifyDay(values);
+    const payload = { date, rep, store, startTs, endTs, durationMs, values, money: values.X * MONEY_PER_X, dayRating: ratingInfo.dayRating, dayBadge: ratingInfo.dayBadge };
+    try {
+      await window.cloudUpsertDay(state.teamId, agentUid, date, payload);
+      managerState.records[agentUid] = managerState.records[agentUid] || {};
+      managerState.records[agentUid][date] = payload;
+      managerState.monthCache.delete(`${agentUid}:${managerState.calCursor.y}-${managerState.calCursor.m}`);
+      if (msg) msg.textContent = t("addDaySaved");
+      if (agentUid === state.uid) {
+        renderCalendar();
+        renderCalendarStats();
+        renderProgress();
+      } else {
+        await renderManagerAgentCalendar();
+        await renderManagerAgentsList();
+      }
+      closeModal(modalAddDay);
+    } catch (e) {
+      if (msg) msg.textContent = `${t("addAgentError")} ${e?.message || e}`;
+    }
+  });
+
+
+  function toTsFromDateAndTime(dateISO, hhmm) {
+    if (!dateISO || !hhmm) return 0;
+    const d = new Date(`${dateISO}T${hhmm}:00`);
+    const ts = d.getTime();
+    return Number.isFinite(ts) ? ts : 0;
+  }
 
   // ---------- Calendar rendering ----------
   let selectedDayISO = null;
   let activeDayISO = null;
+  let activeDayAgentUid = "";
 
   let calCursor = (() => {
     const d = new Date();
@@ -2368,84 +3625,49 @@
     if (calCursor.m > 11) { calCursor.m = 0; calCursor.y += 1; }
     renderCalendar();
   });
-  calGrid.addEventListener("click", (e) => {
-    const cell = e.target.closest(".dayCell");
-    if (!cell) return;
-    const iso = cell.dataset.iso;
-    if (!iso) return;
-    selectedDayISO = iso;
-    renderCalendar();
-    openDayModal(iso);
-  });
-
-  function renderCalendar() {
-    const y = calCursor.y, m = calCursor.m;
-    calTitle.textContent = monthName(y, m);
-
-    calGrid.innerHTML = "";
+  function renderCalendarCore({ y, m, titleEl, gridEl, selectedISO, agentUid, onClick }) {
+    titleEl.textContent = monthName(y, m);
+    gridEl.innerHTML = "";
     const dows = t("calendarWeekdays") || ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-    dows.forEach(s => {
+    dows.forEach((s) => {
       const el = document.createElement("div");
       el.className = "dow";
       el.textContent = s.toUpperCase();
-      calGrid.appendChild(el);
+      gridEl.appendChild(el);
     });
-
     const first = new Date(y, m, 1);
     const firstDow = first.getDay();
     const offset = (firstDow === 0) ? 6 : (firstDow - 1);
     const gridStart = new Date(y, m, 1);
     gridStart.setDate(gridStart.getDate() - offset);
-
-    const hist = loadHistory();
+    const hist = historyForAgent(agentUid);
     const todayISO = isoDateLocal();
-
     for (let i = 0; i < 42; i++) {
       const day = new Date(gridStart);
       day.setDate(gridStart.getDate() + i);
       const iso = isoDateLocal(day);
-      const inMonth = (day.getMonth() === m);
+      const inMonth = day.getMonth() === m;
       const rec = hist[iso];
-
       const S = rec?.values?.S ?? 0;
       const Z = rec?.values?.Z ?? 0;
       const X = rec?.values?.X ?? 0;
       const ratingInfo = rec ? classifyDay(rec.values || {}) : null;
       const dayRating = rec ? (rec.dayRating || ratingInfo.dayRating) : "";
-
-      const isToday = (iso === todayISO);
-      const badgeText = isToday ? t("todayBadge") : "";
+      const isToday = iso === todayISO;
+      const badgeText = isToday ? "HOY" : "";
       const badgeHtml = badgeText ? `<div class="badge ${isToday ? "today" : ""}">${badgeText}</div>` : "";
       const dotHtml = dayRating ? `<span class="dayDot ${dayRating}"></span>` : "";
-
       const cell = document.createElement("div");
-      cell.className =
-        "dayCell" +
-        (inMonth ? "" : " muted") +
-        (rec ? " hasData" : "") +
-                (isToday ? " today" : "") +
-        (selectedDayISO === iso ? " selected" : "");
-
+      cell.className = "dayCell" + (inMonth ? "" : " muted") + (rec ? " hasData" : "") + (isToday ? " today" : "") + (selectedISO === iso ? " selected" : "");
       cell.dataset.iso = iso;
-
-      cell.innerHTML = `
-        <div class="dayContent">
-          <div class="dayTop">
-            <div class="dayNum">${day.getDate()}</div>
-            ${badgeHtml}
-            ${dotHtml}
-          </div>
-
-          <div class="miniClean">
-            <span class="kpiInline">S ${S}</span>
-            <span class="kpiInline">Z ${Z}</span>
-            <span class="kpiInline">X ${X}</span>
-          </div>
-        </div>
-      `;
-      calGrid.appendChild(cell);
+      cell.innerHTML = `<div class="dayContent"><div class="dayTop"><div class="dayNum">${day.getDate()}</div>${badgeHtml}${dotHtml}</div><div class="miniClean"><span class="kpiInline">S ${S}</span><span class="kpiInline">Z ${Z}</span><span class="kpiInline">X ${X}</span></div></div>`;
+      if (typeof onClick === "function") cell.addEventListener("click", () => onClick(iso));
+      gridEl.appendChild(cell);
     }
+  }
 
+  function renderCalendar() {
+    renderCalendarCore({ y: calCursor.y, m: calCursor.m, titleEl: calTitle, gridEl: calGrid, selectedISO: selectedDayISO, agentUid: state.uid, onClick: (iso) => { selectedDayISO = iso; openDayModal(iso, state.uid); renderCalendar(); } });
     renderCalendarStats();
   }
 
@@ -2474,12 +3696,13 @@
   }
 
   function renderCalendarStats() {
+    hydrateCacheFromCloudForVisibleRanges();
     const now = new Date();
     const weekStart = startOfWeekMon(now);
     const weekEnd = endOfWeekSun(now);
-    const weekTotals = sumRecords(recordsInRange(weekStart, weekEnd));
+    const weekTotals = sumRecords(recordsInRangeForAgent(state.uid, weekStart, weekEnd));
 
-    const monthTotals = sumRecords(recordsInMonth(calCursor.y, calCursor.m));
+    const monthTotals = sumRecords(recordsInMonthForAgent(state.uid, calCursor.y, calCursor.m));
 
     renderCompactStatCard(weekStatsEl, t("weekStatsTitle"), weekTotals);
     renderCompactStatCard(monthStatsEl, t("monthStatsTitle"), monthTotals);
@@ -2496,7 +3719,7 @@
       const ws = new Date(thisWeekStart);
       ws.setDate(thisWeekStart.getDate() - (i * 7));
       const we = endOfWeekSun(ws);
-      const totals = sumRecords(recordsInRange(ws, we));
+      const totals = sumRecords(recordsInRangeForAgent(state.uid, ws, we));
       if ((totals.X || 0) >= minSales) streak += 1;
       else break;
     }
@@ -2504,27 +3727,26 @@
   }
 
   function getTrainedAgentsWithCheck() {
-    const n = parseInt(String(appState?.data?.trainedAgentsWithCheck ?? 0), 10);
+    const n = parseInt(localStorage.getItem("trainedAgentsWithCheck") || "0", 10);
     return Math.max(0, Number.isFinite(n) ? n : 0);
   }
 
   function renderProgress() {
+    hydrateCacheFromCloudForVisibleRanges();
     const now = new Date();
     const weekStart = startOfWeekMon(now);
     const weekEnd = endOfWeekSun(now);
-    const weekTotals = sumRecords(recordsInRange(weekStart, weekEnd));
-    const monthTotals = sumRecords(recordsInMonth(now.getFullYear(), now.getMonth()));
+    const weekTotals = sumRecords(recordsInRangeForAgent(state.uid, weekStart, weekEnd));
+    const monthTotals = sumRecords(recordsInMonthForAgent(state.uid, now.getFullYear(), now.getMonth()));
 
     const weekX = weekTotals.X || 0;
     const weekDays = weekTotals.days || 0;
     const weekAgg = (weekTotals.S||0) ? (((weekTotals.Z||0)/(weekTotals.S||0))*100).toFixed(1) + "%" : "0.0%";
     const weekClose = (weekTotals.Z||0) ? (((weekTotals.X||0)/(weekTotals.Z||0))*100).toFixed(1) + "%" : "0.0%";
-    const weekEarned = (weekTotals.X||0) * MONEY_PER_X;
 
     const monthX = monthTotals.X || 0;
     const monthDays = monthTotals.days || 0;
     const monthAvgX = monthDays ? ((monthX)/monthDays).toFixed(1) : "0.0";
-    const monthEarned = (monthTotals.X||0) * MONEY_PER_X;
 
     const streak = Math.min(3, weekSalesStreak(12));
     const trained = Math.min(3, getTrainedAgentsWithCheck());
@@ -2579,7 +3801,6 @@
           <div class="sumPill"><div class="k">${t("days")}</div><div class="v">${weekDays}</div></div>
           <div class="sumPill"><div class="k">% Agg (Z/S)</div><div class="v">${weekAgg}</div></div>
           <div class="sumPill"><div class="k">% Close (X/Z)</div><div class="v">${weekClose}</div></div>
-          <div class="sumPill"><div class="k">EARNED</div><div class="v">$${weekEarned}</div></div>
         </div>
       </div>
 
@@ -2590,7 +3811,6 @@
         <div class="compactGrid">
           <div class="sumPill"><div class="k">${t("avgXPerDay")}</div><div class="v">${monthAvgX}</div></div>
           <div class="sumPill"><div class="k">${t("days")}</div><div class="v">${monthDays}</div></div>
-          <div class="sumPill"><div class="k">EARNED</div><div class="v">$${monthEarned}</div></div>
           <div class="sumPill"><div class="k">% Close (X/Z)</div><div class="v">${(monthTotals.Z||0) ? (((monthTotals.X||0)/(monthTotals.Z||0))*100).toFixed(1) + "%" : "0.0%"}</div></div>
         </div>
       </div>
@@ -2599,12 +3819,9 @@
 
   // ---------- Buttons ----------
   function openStartModal() {
-    if (!state.rep) {
-      alert(t("missingProfile"));
-      openProfileModal();
-      return;
-    }
-    startProfileName.textContent = `${t("profileForDay")}: ${state.rep}`;
+    const currentName = state.rep || (window.firebaseAuth?.currentUser?.displayName || "Usuario");
+    state.rep = currentName;
+    startProfileName.textContent = `${t("profileForDay")}: ${currentName}`;
     startStore.value = "";
     openModal(modalStart);
     setTimeout(() => startStore.focus(), 50);
@@ -2617,7 +3834,6 @@
   }
 
   startDayBtn.addEventListener("click", openStartModal);
-  profileBtn.addEventListener("click", openProfileModal);
 
   document.getElementById("profile_x").addEventListener("click", () => closeModal(modalProfile));
   document.getElementById("profile_save").addEventListener("click", () => {
@@ -2631,19 +3847,16 @@
   });
 
   document.getElementById("profile_reset").addEventListener("click", () => {
-    if (APP_MODE === "agent") return;
-    const ok = confirm(t("resetConfirm1"));
+    const ok = confirm(currentLang === "es" ? "¿Resetear nombre e historial?" : "Reset name and history?");
     if (!ok) return;
-    const token = prompt(t("resetConfirm2"), "");
-    const expected = currentLang === "es" ? "BORRAR" : "DELETE";
-    if ((token || "").trim().toUpperCase() !== expected) return;
-    appState = { schemaVersion: APP_SCHEMA_VERSION, updatedAt: new Date().toISOString(), data: makeDefaultAppData() };
+    try { localStorage.removeItem(PROFILE_KEY); } catch {}
+    try { localStorage.removeItem(HISTORY_KEY); } catch {}
+    try { localStorage.removeItem(historyStorageKey()); } catch {}
     state.rep = "";
     state.store = "";
-    state.values = { ...makeDefaultAppData().session.values };
-    saveAppState();
+    saveStateNow();
     renderCalendar();
-    if (features.progressEnabled) renderProgress();
+    renderProgress();
     applyTranslations();
     closeModal(modalProfile);
   });
@@ -2673,9 +3886,8 @@
     const text = buildReport(endTs);
     const ratingInfo = classifyDay(state.values || {});
     const result = ratingLine(ratingInfo.dayRating, ratingInfo.dayBadge);
-    finishResult.textContent = `${t("finishResult")}: ${result}`;
     reportDayRating.style.display = "";
-    reportDayRating.textContent = `${t("dayResult")}: ${result}`;
+    reportDayRating.innerHTML = `${t("dayResult")}: <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:999px;background:${ratingColor(ratingInfo.dayRating)};display:inline-block;"></span><span>${result}</span></span>`;
     reportBox.textContent = text;
     showQRForText(text);
     setReportMode("tablet");
@@ -2723,7 +3935,11 @@
         }
       }
 
-      persistCompletedDay(endTs, text);
+      const result = await persistCompletedDay(endTs, text);
+      if (!result?.cloudSaved && window.firebaseAuth?.currentUser?.uid) {
+        alert(currentLang === "en" ? "Could not save to cloud. Please try again." : "No se pudo guardar en la nube. Inténtalo de nuevo.");
+        return;
+      }
       finalizeAndReset();
       history.replaceState(null, "", location.pathname);
     } catch (_) {
@@ -2734,17 +3950,59 @@
   copyBtn.addEventListener("click", () => doCopyOrShare("copy"));
   shareBtn.addEventListener("click", () => doCopyOrShare("share"));
 
-  endBtn.addEventListener("click", () => {
+  let isEndingDay = false;
+
+  async function handleEndDay() {
+    console.log("handleEndDay click", { active: state.active, modeVisible: endBtn.style.display !== "none" });
     const confirmMsg = t("endConfirm");
     if (!confirm(confirmMsg)) return;
+    if (isEndingDay) return;
 
-    const endTs = Date.now();
-    const text = reportBox.textContent || "";
-    persistCompletedDay(endTs, text);
+    const previousLabel = endBtn.textContent;
+    const dayISO = state.date;
+    isEndingDay = true;
+    endBtn.disabled = true;
+    endBtn.textContent = t("savingDay");
+    if (reportSaveStatus) reportSaveStatus.textContent = t("savingDay");
 
-    finalizeAndReset();
-    history.replaceState(null, "", location.pathname);
-  });
+    try {
+      const endTs = Date.now();
+      const text = (reportBox.textContent || "").trim() || buildReport(endTs);
+      const result = await persistCompletedDay(endTs, text);
+      if (!result?.cloudSaved && window.firebaseAuth?.currentUser?.uid) {
+        throw new Error("cloud-save-failed");
+      }
+
+      const saved = loadHistory()[dayISO];
+      if (!saved) throw new Error(`Day not found in cache after save: ${dayISO}`);
+      console.log("Saved day:", dayISO, saved);
+      if (state.teamId) console.log("Saved to Firestore", { teamId: state.teamId, uid: window.firebaseAuth?.currentUser?.uid, date: dayISO });
+
+      finalizeAndReset();
+      closeModal(modalReport);
+      if ((location.hash || "").startsWith("#r=")) {
+        history.replaceState(null, "", location.pathname);
+      } else {
+        history.replaceState(null, "", location.pathname + location.search);
+      }
+
+      if (reportSaveStatus) reportSaveStatus.textContent = t("savedOk");
+      endBtn.textContent = t("savedOk");
+      setTimeout(() => {
+        endBtn.textContent = t("endDayNow");
+      }, 900);
+    } catch (err) {
+      console.error("handleEndDay failed", err);
+      if (reportSaveStatus) reportSaveStatus.textContent = t("saveError");
+      alert(currentLang === "en" ? "Could not save the day. Please try again." : "No se pudo guardar el día. Inténtalo de nuevo.");
+      endBtn.textContent = previousLabel || t("endDayNow");
+    } finally {
+      isEndingDay = false;
+      endBtn.disabled = false;
+    }
+  }
+
+  endBtn.addEventListener("click", handleEndDay);
 
   function normalizeHistoryRatings() {
     const hist = loadHistory();
@@ -2762,8 +4020,8 @@
   }
 
   langToggleBtn.addEventListener("click", () => openModal(modalLanguage));
+  if (authLangToggleBtn) authLangToggleBtn.addEventListener("click", () => openModal(modalLanguage));
   document.getElementById("lang_x").addEventListener("click", () => closeModal(modalLanguage));
-  document.getElementById("unavailable_x").addEventListener("click", () => closeModal(unavailableModal));
   langEsBtn.addEventListener("click", () => setLanguage("es"));
   langEnBtn.addEventListener("click", () => setLanguage("en"));
   clickOutsideToClose(modalLanguage, true);
@@ -2784,9 +4042,575 @@
     }
 
     renderCalendar();
-    if (features.progressEnabled) renderProgress();
+    renderProgress();
+    hydrateCacheFromCloudForVisibleRanges().then(() => {
+      renderCalendar();
+      renderProgress();
+    });
     saveState();
   })();
 </script>
+
+  <!-- Firebase reminder: en Firebase Console > Authentication > Settings > Authorized domains agrega tu dominio de GitHub Pages (tuusuario.github.io). -->
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut } 
+    from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc, updateDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDFFcAXi0gs1tielHMTjZXfLxnj6aE4zSU",
+    authDomain: "closeflowtracker.firebaseapp.com",
+    projectId: "closeflowtracker",
+    storageBucket: "closeflowtracker.firebasestorage.app",
+    messagingSenderId: "192350700436",
+    appId: "1:192350700436:web:5469db8ba8bb2db0c78581",
+    measurementId: "G-GRV43R260Q"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const analytics = getAnalytics(app);
+  const TEAM_STORAGE_KEY = "kpi_team_v1";
+  const MONEY_PER_X_CENTS = 100;
+  const DEBUG_ENABLED = false;
+  const debugLog = (...args) => { if (DEBUG_ENABLED) console.log(...args); };
+
+  // Exponer para el resto del código si es necesario
+  window.firebaseAuth = auth;
+  window.firebaseDB = db;
+
+  function normalizeTeamIdOrThrow(teamId) {
+    const clean = String(teamId || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    if (!clean) throw new Error("Invalid Team ID");
+    return clean;
+  }
+
+  async function resolveTeamIdForUser(uid) {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      const fallbackName = auth.currentUser?.displayName || "";
+      const fallbackEmail = auth.currentUser?.email || "";
+      const fallbackTeam = sanitizeTeamId(localStorage.getItem(TEAM_STORAGE_KEY) || "");
+      await setDoc(userRef, {
+        teamId: fallbackTeam || "",
+        displayName: fallbackName,
+        email: fallbackEmail,
+        createdAt: serverTimestamp(),
+      }, { merge: true });
+      return fallbackTeam || "";
+    }
+
+    const data = userSnap.data() || {};
+    return sanitizeTeamId(data.teamId || "");
+  }
+
+  async function ensureTeamMembership(teamId, uid) {
+    const safeTeamId = normalizeTeamIdOrThrow(teamId);
+    const safeUid = String(uid || "").trim();
+    if (!safeUid) return;
+
+    const user = auth.currentUser;
+    const displayName = user?.displayName || state.rep || "";
+    const email = user?.email || "";
+
+    await Promise.all([
+      setDoc(doc(db, "teams", safeTeamId), {
+        createdAt: serverTimestamp(),
+      }, { merge: true }),
+      setDoc(doc(db, "teams", safeTeamId, "members", safeUid), {
+        teamId: safeTeamId,
+        displayName,
+        email,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true }),
+      setDoc(doc(db, "users", safeUid), {
+        teamId: safeTeamId,
+        displayName,
+        email,
+        updatedAt: serverTimestamp(),
+      }, { merge: true }),
+    ]);
+  }
+
+  async function cloudUpsertDay(teamId, uid, iso, dayData) {
+    const safeTeamId = normalizeTeamIdOrThrow(teamId);
+    const safeIso = String(iso || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(safeIso)) throw new Error("Invalid day ISO");
+
+    const dayRef = doc(db, "teams", safeTeamId, "agents", uid, "days", safeIso);
+    const S = Number(dayData?.values?.S || 0);
+    const Z = Number(dayData?.values?.Z || 0);
+    const CC = Number(dayData?.values?.CC || 0);
+    const C = Number(dayData?.values?.C || 0);
+    const X = Number(dayData?.values?.X || 0);
+
+    const payload = {
+      date: safeIso,
+      rep: dayData?.rep || "",
+      store: dayData?.store || "",
+      startTs: Number(dayData?.startTs || 0),
+      endTs: Number(dayData?.endTs || 0),
+      durationMs: Number(dayData?.durationMs || 0),
+      values: { S, Z, CC, C, X },
+      money: X * MONEY_PER_X_CENTS,
+      dayRating: dayData?.dayRating || "",
+      dayBadge: dayData?.dayBadge || "",
+      schemaVersion: 1,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    const path = `teams/${safeTeamId}/agents/${uid}/days/${safeIso}`;
+    try {
+      console.log("Firestore day payload:", payload);
+      console.log("Saving day to Firestore...", safeTeamId, uid, safeIso);
+      await setDoc(dayRef, payload, { merge: true });
+      console.log("Saved day to Firestore OK");
+      debugLog("Firestore path", path);
+      return { path, payload };
+    } catch (e) {
+      console.error("Firestore day write failed", e);
+      console.error("Firestore day write failed (actionable): verify Firestore Rules allow teams/{teamId}/agents/{uid}/days writes for this user/team.", e?.code || e?.message || e);
+      throw e;
+    }
+  }
+
+  async function cloudDeleteDay(teamId, uid, iso) {
+    const safeTeamId = normalizeTeamIdOrThrow(teamId);
+    const safeIso = String(iso || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(safeIso)) throw new Error("Invalid day ISO");
+
+    await deleteDoc(doc(db, "teams", safeTeamId, "agents", uid, "days", safeIso));
+  }
+
+  async function migrateAddSchemaVersion(teamId, agentUid) {
+    const safeTeamId = normalizeTeamIdOrThrow(teamId);
+    const safeUid = String(agentUid || "").trim();
+    if (!safeUid) throw new Error("Invalid agent uid");
+
+    const colRef = collection(db, "teams", safeTeamId, "agents", safeUid, "days");
+    const snap = await getDocs(colRef);
+    let updated = 0;
+
+    for (const dayDoc of snap.docs) {
+      const data = dayDoc.data() || {};
+      if (data.schemaVersion == null) {
+        await updateDoc(dayDoc.ref, {
+          schemaVersion: 1,
+          updatedAt: serverTimestamp(),
+        });
+        updated += 1;
+      }
+    }
+
+    const summary = { checked: snap.size, updated, teamId: safeTeamId, agentUid: safeUid };
+    console.log("migrateAddSchemaVersion summary:", summary);
+    return summary;
+  }
+
+
+  async function cloudGetDaysInRange(teamId, uid, startISO, endISO) {
+    const safeTeamId = normalizeTeamIdOrThrow(teamId);
+    const colRef = collection(db, "teams", safeTeamId, "agents", uid, "days");
+    const q = query(colRef, where("date", ">=", startISO), where("date", "<=", endISO));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => {
+      const data = d.data() || {};
+      const values = {
+        S: Number(data?.values?.S ?? data?.S ?? 0),
+        Z: Number(data?.values?.Z ?? data?.Z ?? 0),
+        CC: Number(data?.values?.CC ?? data?.CC ?? 0),
+        C: Number(data?.values?.C ?? data?.C ?? 0),
+        X: Number(data?.values?.X ?? data?.X ?? 0),
+      };
+      return {
+        date: data?.date || d.id,
+        rep: data?.rep || "",
+        store: data?.store || "",
+        startTs: Number(data?.startTs || 0),
+        endTs: Number(data?.endTs || 0),
+        durationMs: Number(data?.durationMs || 0),
+        values,
+        money: Number(data?.money ?? (values.X * MONEY_PER_X_CENTS)),
+        dayRating: data?.dayRating || "",
+        dayBadge: data?.dayBadge || "",
+      };
+    });
+  }
+
+
+
+  // FIRESTORE RULES SNIPPET (prototype):
+  // match /teams/{teamId}/agents/{uid}/days/{dayId} {
+  //   allow read, write: if request.auth != null && request.auth.uid == uid;
+  //   allow read: if request.auth != null
+  //     && exists(/databases/$(database)/documents/teams/$(teamId)/managers/$(request.auth.uid)/agents/$(uid));
+  // }
+  // match /teams/{teamId}/managers/{managerUid}/agents/{agentUid} {
+  //   allow create, update, delete, read: if request.auth != null && request.auth.uid == managerUid;
+  // }
+  // No cross-team access: always scope reads/writes under the same teamId the user belongs to.
+
+  async function cloudListAssignedAgents(teamId, managerUid) {
+    const safeTeamId = normalizeTeamIdOrThrow(teamId);
+    const colRef = collection(db, "teams", safeTeamId, "managers", managerUid, "agents");
+    const snap = await getDocs(query(colRef, orderBy("displayName"), limit(200)));
+    return snap.docs.map((d) => ({ uid: d.id, ...(d.data() || {}) }));
+  }
+
+  async function cloudAssignAgentToManagerByEmail(teamId, managerUid, email) {
+    const safeTeamId = normalizeTeamIdOrThrow(teamId);
+    const safeEmail = String(email || "").trim().toLowerCase();
+    if (!safeEmail) throw new Error("Email is required");
+
+    const membersRef = collection(db, "teams", safeTeamId, "members");
+    const membersQ = query(membersRef, where("email", "==", safeEmail), limit(1));
+    const membersSnap = await getDocs(membersQ);
+    if (membersSnap.empty) throw new Error(t("userNotFoundInTeam"));
+
+    const memberDoc = membersSnap.docs[0];
+    const targetUid = memberDoc.id;
+    const member = memberDoc.data() || {};
+    const assignmentRef = doc(db, "teams", safeTeamId, "managers", managerUid, "agents", targetUid);
+    const assignmentSnap = await getDoc(assignmentRef);
+    if (assignmentSnap.exists()) {
+      return { alreadyAssigned: true, uid: targetUid };
+    }
+
+    await setDoc(assignmentRef, {
+      displayName: member.displayName || "",
+      email: member.email || safeEmail,
+      addedAt: serverTimestamp(),
+    }, { merge: true });
+    return { alreadyAssigned: false, uid: targetUid };
+  }
+
+  async function cloudRemoveAssignedAgent(teamId, managerUid, agentUid) {
+    const safeTeamId = normalizeTeamIdOrThrow(teamId);
+    const safeAgentUid = String(agentUid || "").trim();
+    if (!safeAgentUid) throw new Error("Agent uid is required");
+    await deleteDoc(doc(db, "teams", safeTeamId, "managers", managerUid, "agents", safeAgentUid));
+    return true;
+  }
+
+  async function promoteToManager(targetUid) {
+    const safeTeamId = normalizeTeamIdOrThrow(state.teamId);
+    await Promise.all([
+      setDoc(doc(db, "users", targetUid), { role: "manager", updatedAt: serverTimestamp() }, { merge: true }),
+      setDoc(doc(db, "teams", safeTeamId, "members", targetUid), { role: "manager", updatedAt: serverTimestamp() }, { merge: true }),
+    ]);
+    return true;
+  }
+
+  window.resolveTeamIdForUser = resolveTeamIdForUser;
+  window.ensureTeamMembership = ensureTeamMembership;
+  window.cloudUpsertDay = cloudUpsertDay;
+  window.cloudDeleteDay = cloudDeleteDay;
+  window.cloudGetDaysInRange = cloudGetDaysInRange;
+  window.migrateAddSchemaVersion = migrateAddSchemaVersion;
+  window.cloudListAssignedAgents = cloudListAssignedAgents;
+  window.cloudAssignAgentToManagerByEmail = cloudAssignAgentToManagerByEmail;
+  window.cloudRemoveAssignedAgent = cloudRemoveAssignedAgent;
+  window.promoteToManager = promoteToManager;
+
+  const authRootEl = document.getElementById("authRoot");
+  const appRootEl = document.getElementById("appRoot");
+  const authCardEl = document.getElementById("authCard");
+  let hideAppTimeout = null;
+  let hideAuthTimeout = null;
+
+  // UI helpers: show/hide (sin transiciones para priorizar estabilidad)
+  function showAuth() {
+    if (hideAppTimeout) clearTimeout(hideAppTimeout);
+    if (hideAuthTimeout) clearTimeout(hideAuthTimeout);
+    appRootEl.style.display = "none";
+    authRootEl.style.display = "flex";
+    const overlay = document.getElementById("auth_signup_overlay");
+    if (overlay) overlay.classList.remove("show");
+  }
+
+  function showApp()  {
+    if (hideAppTimeout) clearTimeout(hideAppTimeout);
+    if (hideAuthTimeout) clearTimeout(hideAuthTimeout);
+    authRootEl.style.display = "none";
+    appRootEl.style.display = "block";
+  }
+
+  function resetManagerUiState() {
+    managerState.selectedAgentUid = "";
+    managerState.selectedAgentName = "";
+    managerState.selectedAgentEmail = "";
+    managerAgentDetailEl.style.display = "none";
+    if (managerRemoveAgentBtn) managerRemoveAgentBtn.style.display = "none";
+  }
+
+  // Mostrar auth de inmediato para evitar pantalla vacía/azul mientras Firebase resuelve sesión
+  showAuth();
+
+  // Estado de sesión
+  onAuthStateChanged(auth, (user) => {
+    const loginBtn = document.getElementById("authLoginBtn");
+    const loginBtnText = document.getElementById("authLoginBtnText");
+
+    if (user) {
+      showApp();
+      // Evita arrastre visual de pestaña/panel manager entre sesiones
+      state.role = "agent";
+      const agentsTabLabelPre = document.getElementById("tab_agents_label");
+      if (agentsTabLabelPre) agentsTabLabelPre.style.display = "none";
+      resetManagerUiState();
+      if (typeof window.setActiveTab === "function") window.setActiveTab("counter");
+
+      // Si el usuario venía de click en login, limpias estado loading aquí (después del cambio real de sesión)
+      if (loginBtn) {
+        loginBtn.disabled = false;
+        loginBtn.classList.remove("loading");
+      }
+      if (authCardEl) authCardEl.classList.remove("loading");
+      if (loginBtnText) loginBtnText.textContent = t("loginBtn");
+
+      const repName = user.displayName || (user.email ? user.email.split("@")[0] : "Usuario");
+      state.rep = repName;
+      try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ rep: repName })); } catch {}
+      saveStateNow();
+      applyTranslations();
+      const el = document.getElementById("userEmail");
+      if (el) el.textContent = repName;
+
+      // Resolver team desde Firestore (/users/{uid}) y sincronizar cloud SIN bloquear UI
+      (async () => {
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+          let teamId = "";
+
+          if (!userSnap.exists()) {
+            const fallbackTeam = sanitizeTeamId(localStorage.getItem(TEAM_STORAGE_KEY) || "");
+            await setDoc(userRef, {
+              teamId: fallbackTeam || "",
+              displayName: user.displayName || "",
+              email: user.email || "",
+              role: "agent",
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+            teamId = fallbackTeam || "";
+            debugLog("Profile write OK", `users/${user.uid}`);
+          } else {
+            const data = userSnap.data() || {};
+            teamId = sanitizeTeamId(data.teamId || "");
+            // mantiene perfil actualizado
+            await setDoc(userRef, {
+              displayName: user.displayName || "",
+              email: user.email || "",
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+            debugLog("Profile write OK", `users/${user.uid}`);
+          }
+
+          window.setTeamId(teamId);
+          state.uid = user.uid;
+          let role = (userSnap.exists() ? (userSnap.data()?.role || "agent") : "agent");
+          if (teamId) {
+            await ensureTeamMembership(teamId, user.uid);
+            const memberSnap = await getDoc(doc(db, "teams", teamId, "members", user.uid));
+            const memberRole = memberSnap.exists() ? (memberSnap.data()?.role || "") : "";
+            role = (role === "manager" || memberRole === "manager") ? "manager" : (memberRole || role);
+          }
+          state.role = role;
+          saveStateNow();
+          console.log("role/team loaded", { teamId: teamId || "", role, uid: user.uid });
+          const agentsTabLabel = document.getElementById("tab_agents_label");
+          if (agentsTabLabel) agentsTabLabel.style.display = role === "manager" ? "" : "none";
+          if (role === "manager" && typeof window.loadManagerAgents === "function") {
+            await window.loadManagerAgents();
+          }
+          if (role !== "manager") {
+            resetManagerUiState();
+          }
+          if (typeof window.setActiveTab === "function") window.setActiveTab("counter");
+        } catch (err) {
+          console.error("TEAM/users bootstrap failed", err);
+        }
+
+        try {
+          await hydrateCacheFromCloudForVisibleRanges();
+          renderCalendar();
+          renderProgress();
+        } catch (err) {
+          console.warn("Post-login hydrate failed", err);
+        }
+      })();
+    } else {
+      window.setTeamId("");
+      state.role = "agent";
+      state.uid = "";
+      const agentsTabLabel = document.getElementById("tab_agents_label");
+      if (agentsTabLabel) agentsTabLabel.style.display = "none";
+      resetManagerUiState();
+      if (typeof window.setActiveTab === "function") window.setActiveTab("counter");
+      showAuth();
+
+      if (loginBtn) {
+        loginBtn.disabled = false;
+        loginBtn.classList.remove("loading");
+      }
+      if (authCardEl) authCardEl.classList.remove("loading");
+      if (loginBtnText) loginBtnText.textContent = t("loginBtn");
+    }
+  });
+
+  // Acciones Auth (ligadas a botones)
+  window.authOpenSignup = () => {
+    const overlay = document.getElementById("auth_signup_overlay");
+    const msgEl = document.getElementById("signupMsg");
+    if (msgEl) { msgEl.textContent = ""; msgEl.classList.remove("error"); }
+    if (overlay) overlay.classList.add("show");
+  };
+
+  window.authCloseSignup = () => {
+    const overlay = document.getElementById("auth_signup_overlay");
+    if (overlay) overlay.classList.remove("show");
+  };
+
+  window.authSignup = async () => {
+    const name = document.getElementById("signupName").value.trim();
+    const email = document.getElementById("signupEmail").value.trim();
+    const teamRaw = document.getElementById("signupTeamId").value;
+    const pass = document.getElementById("signupPass").value;
+    const pass2 = document.getElementById("signupPass2").value;
+    const msgEl = document.getElementById("signupMsg");
+    const createBtn = document.getElementById("signupCreateBtn");
+
+    msgEl.textContent = "";
+    msgEl.classList.remove("error");
+
+    let teamId = "";
+    try {
+      teamId = normalizeTeamIdOrThrow(teamRaw);
+    } catch {
+      msgEl.textContent = currentLang === "en"
+        ? "Team ID is required."
+        : "Team ID es obligatorio.";
+      msgEl.classList.add("error");
+      return;
+    }
+
+    if (!name || !email || !pass || !pass2) {
+      msgEl.textContent = currentLang === "en" ? "Complete all fields." : "Completa todos los campos.";
+      msgEl.classList.add("error");
+      return;
+    }
+    if (pass !== pass2) {
+      msgEl.textContent = currentLang === "en" ? "Passwords do not match." : "Las contraseñas no coinciden.";
+      msgEl.classList.add("error");
+      return;
+    }
+
+    createBtn.disabled = true;
+    createBtn.textContent = currentLang === "en" ? "Creating…" : "Creando…";
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(cred.user, { displayName: name });
+
+      await Promise.all([
+        setDoc(doc(db, "users", cred.user.uid), {
+          teamId,
+          displayName: name,
+          email,
+          role: "agent",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }, { merge: true }),
+        setDoc(doc(db, "teams", teamId), {
+          createdAt: serverTimestamp(),
+        }, { merge: true }),
+        setDoc(doc(db, "teams", teamId, "members", cred.user.uid), {
+          teamId,
+          displayName: name,
+          email,
+          role: "agent",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }, { merge: true }),
+      ]);
+
+      debugLog("Profile write OK", `users/${cred.user.uid}`);
+      debugLog("Profile write OK", `teams/${teamId}`);
+      debugLog("Profile write OK", `teams/${teamId}/members/${cred.user.uid}`);
+
+      window.setTeamId(teamId);
+      state.rep = name;
+      try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ rep: name })); } catch {}
+      saveStateNow();
+      const nameEl = document.getElementById("userEmail");
+      if (nameEl) nameEl.textContent = name;
+      msgEl.textContent = currentLang === "en" ? "Account created successfully." : "Cuenta creada correctamente.";
+      setTimeout(() => authCloseSignup(), 450);
+    } catch (e) {
+      msgEl.textContent = humanAuthError(e);
+      msgEl.classList.add("error");
+      console.error("Profile write failed", e);
+    } finally {
+      createBtn.disabled = false;
+      createBtn.textContent = t("signupBtn");
+    }
+  };
+
+  window.authLogin = async () => {
+    const email = document.getElementById("authEmail").value.trim();
+    const pass  = document.getElementById("authPass").value;
+    const msgEl = document.getElementById("authMsg");
+    const loginBtn = document.getElementById("authLoginBtn");
+    const loginBtnText = document.getElementById("authLoginBtnText");
+
+    msgEl.textContent = "";
+    msgEl.classList.remove("error");
+    loginBtn.disabled = true;
+    loginBtn.classList.add("loading");
+    loginBtnText.textContent = "Iniciando…";
+    authCardEl.classList.remove("shake");
+    authCardEl.classList.add("loading");
+
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      msgEl.textContent = "";
+      msgEl.classList.remove("error");
+    } catch (e) {
+      msgEl.textContent = humanAuthError(e);
+      msgEl.classList.add("error");
+      authCardEl.classList.remove("loading");
+      authCardEl.classList.add("shake");
+      setTimeout(() => authCardEl.classList.remove("shake"), 280);
+      loginBtn.disabled = false;
+      loginBtn.classList.remove("loading");
+      loginBtnText.textContent = t("loginBtn");
+      return;
+    }
+
+    // El botón se restablece en onAuthStateChanged para evitar estados inconsistentes.
+  };
+
+  window.authLogout = async () => {
+    await signOut(auth);
+  };
+
+  function humanAuthError(e){
+    const code = e?.code || "";
+    if (code === "auth/invalid-email") return "Email inválido.";
+    if (code === "auth/user-not-found") return "No existe esa cuenta.";
+    if (code === "auth/wrong-password") return "Contraseña incorrecta.";
+    if (code === "auth/email-already-in-use") return "Ese email ya está registrado.";
+    if (code === "auth/weak-password") return "Contraseña muy débil (mínimo 6 caracteres).";
+    return e?.message || "Error de autenticación.";
+  }
+</script>
+
 </body>
 </html>
