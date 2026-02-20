@@ -1567,12 +1567,12 @@
       </div>
       <div class="authBrand">
         <h1 class="authBrandTitle">RetailFlow Tracker</h1>
-        <p class="authBrandSubtitle">Control profesional de ventas retail</p>
+        <p class="authBrandSubtitle" id="auth_brand_subtitle">Dominando el juego de las comisiones</p>
       </div>
 
       <div id="authCard" class="authCard">
         <h2 class="authTitle" id="auth_login_title">Inicia sesión</h2>
-        <div class="authCardIntro">Accede a tu panel de rendimiento diario</div>
+        <div class="authCardIntro" id="auth_card_intro">Accede a tu panel de rendimiento diario</div>
         <input id="authEmail" class="authInput" type="email" placeholder="tu@email.com" autocomplete="email" />
         <input id="authPass" class="authInput" type="password" placeholder="Contraseña" autocomplete="current-password" />
         <div class="authActions">
@@ -1583,10 +1583,10 @@
           </button>
         </div>
         <div id="authMsg" class="authMsg"></div>
-        <div class="authSecureText">Tus datos se guardan de forma segura en la nube</div>
+        <div class="authSecureText" id="auth_secure_text">Tus datos se guardan de forma segura en la nube</div>
       </div>
 
-      <div class="authVersion">v1.0 · RetailFlow</div>
+      <div class="authVersion" id="auth_version">v1.5 · RetailFlow</div>
     </div>
 
     <div class="authSignupOverlay" id="auth_signup_overlay">
@@ -1977,6 +1977,10 @@
       session: "Sesión",
       appTitle: "RetailFlow Tracker",
       loginTitle: "Inicia sesión",
+      authBrandSubtitle: "Dominando el juego de las comisiones",
+      authCardIntro: "Accede a tu panel de rendimiento diario",
+      authSecureText: "Tus datos se guardan de forma segura en la nube",
+      authVersion: "v1.5 · RetailFlow",
       loginEmailPlaceholder: "tu@email.com",
       loginPassPlaceholder: "Contraseña",
       loginBtn: "Iniciar sesión",
@@ -2133,6 +2137,10 @@
       session: "Session",
       appTitle: "RetailFlow Tracker",
       loginTitle: "Sign in",
+      authBrandSubtitle: "Mastering the commission game",
+      authCardIntro: "Access your daily performance dashboard",
+      authSecureText: "Your data is securely stored in the cloud",
+      authVersion: "v1.5 · RetailFlow",
       loginEmailPlaceholder: "your@email.com",
       loginPassPlaceholder: "Password",
       loginBtn: "Sign in",
@@ -2679,6 +2687,14 @@
     document.getElementById("today_title").textContent = t("appTitle");
     const loginTitleEl = document.getElementById("auth_login_title");
     if (loginTitleEl) loginTitleEl.textContent = t("loginTitle");
+    const authBrandSubtitleEl = document.getElementById("auth_brand_subtitle");
+    if (authBrandSubtitleEl) authBrandSubtitleEl.textContent = t("authBrandSubtitle");
+    const authCardIntroEl = document.getElementById("auth_card_intro");
+    if (authCardIntroEl) authCardIntroEl.textContent = t("authCardIntro");
+    const authSecureTextEl = document.getElementById("auth_secure_text");
+    if (authSecureTextEl) authSecureTextEl.textContent = t("authSecureText");
+    const authVersionEl = document.getElementById("auth_version");
+    if (authVersionEl) authVersionEl.textContent = t("authVersion");
     const authEmailEl = document.getElementById("authEmail");
     const authPassEl = document.getElementById("authPass");
     if (authEmailEl) authEmailEl.placeholder = t("loginEmailPlaceholder");
